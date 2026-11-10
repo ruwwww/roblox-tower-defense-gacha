@@ -1784,7 +1784,7 @@ function UIController.BuildEventsModal()
 	-- Banner 1: Novice Headstart Bundle (Monetization Offer)
 	local starterCard = Instance.new("Frame")
 	starterCard.Name = "StarterBundleCard"
-	starterCard.Size = UDim2.new(1, 0, 0, 170)
+	starterCard.Size = UDim2.new(1, 0, 0, 155)
 	starterCard.BackgroundColor3 = Color3.fromRGB(36, 26, 44)
 	starterCard.ZIndex = 17
 	starterCard.Parent = scroll
@@ -1809,6 +1809,7 @@ function UIController.BuildEventsModal()
 	bTitle.Text = "🌟 NOVICE HEADSTART BUNDLE (LIMITED 1x)"
 	bTitle.ZIndex = 18
 	bTitle.Parent = starterCard
+	UIController.Elements.StarterTitle = bTitle
 
 	local bContent = Instance.new("TextLabel")
 	bContent.Size = UDim2.new(0.65, 0, 0.6, 0)
@@ -1823,8 +1824,8 @@ function UIController.BuildEventsModal()
 	bContent.Parent = starterCard
 
 	local buyBtn = Instance.new("TextButton")
-	buyBtn.Size = UDim2.new(0.25, 0, 0.45, 0)
-	buyBtn.Position = UDim2.new(0.71, 0, 0.28, 0)
+	buyBtn.Size = UDim2.new(0.26, 0, 0.45, 0)
+	buyBtn.Position = UDim2.new(0.70, 0, 0.28, 0)
 	buyBtn.BackgroundColor3 = Color3.fromRGB(45, 175, 75)
 	buyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 	buyBtn.TextScaled = true
@@ -1839,14 +1840,142 @@ function UIController.BuildEventsModal()
 	bbCorn.Parent = buyBtn
 
 	buyBtn.MouseButton1Click:Connect(function()
-		if UIController.Remotes.PurchaseStarterPack then
-			UIController.Remotes.PurchaseStarterPack:FireServer()
+		if UIController.Remotes.PurchaseEventOffer then
+			UIController.Remotes.PurchaseEventOffer:FireServer("starter_pack")
 		end
 	end)
 
-	-- Banner 2: 7-Day Login Event Preview
+	-- Banner 2: Elite Commander Supply (Diamond Purchase)
+	local scrollCard = Instance.new("Frame")
+	scrollCard.Name = "ScrollBundleCard"
+	scrollCard.Size = UDim2.new(1, 0, 0, 150)
+	scrollCard.BackgroundColor3 = Color3.fromRGB(32, 24, 45)
+	scrollCard.ZIndex = 17
+	scrollCard.Parent = scroll
+
+	local spCorn = Instance.new("UICorner")
+	spCorn.CornerRadius = UDim.new(0, 12)
+	spCorn.Parent = scrollCard
+
+	local spStroke = Instance.new("UIStroke")
+	spStroke.Color = Color3.fromRGB(200, 80, 255)
+	spStroke.Thickness = 2
+	spStroke.Parent = scrollCard
+
+	local spTitle = Instance.new("TextLabel")
+	spTitle.Size = UDim2.new(0.65, 0, 0.22, 0)
+	spTitle.Position = UDim2.new(0.04, 0, 0.08, 0)
+	spTitle.BackgroundTransparency = 1
+	spTitle.TextColor3 = Color3.fromRGB(220, 140, 255)
+	spTitle.TextScaled = true
+	spTitle.Font = Enum.Font.GothamBlack
+	spTitle.TextXAlignment = Enum.TextXAlignment.Left
+	spTitle.Text = "🔮 ELITE COMMANDER SUPPLY"
+	spTitle.ZIndex = 18
+	spTitle.Parent = scrollCard
+	UIController.Elements.ScrollPackTitle = spTitle
+
+	local spContent = Instance.new("TextLabel")
+	spContent.Size = UDim2.new(0.65, 0, 0.6, 0)
+	spContent.Position = UDim2.new(0.04, 0, 0.32, 0)
+	spContent.BackgroundTransparency = 1
+	spContent.TextColor3 = Color3.fromRGB(230, 220, 245)
+	spContent.TextScaled = true
+	spContent.Font = Enum.Font.Gotham
+	spContent.TextXAlignment = Enum.TextXAlignment.Left
+	spContent.Text = "Special Discounted Summon Crate:\n✦ 10x Elite Summon Scrolls (Worth 2,200 💎)\n✦ +30,000 Gold\nSave 400 💎 Diamonds!"
+	spContent.ZIndex = 18
+	spContent.Parent = scrollCard
+
+	local spBtn = Instance.new("TextButton")
+	spBtn.Size = UDim2.new(0.26, 0, 0.45, 0)
+	spBtn.Position = UDim2.new(0.70, 0, 0.28, 0)
+	spBtn.BackgroundColor3 = Color3.fromRGB(160, 60, 210)
+	spBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	spBtn.TextScaled = true
+	spBtn.Font = Enum.Font.GothamBlack
+	spBtn.Text = "💎 BUY (1,800 💎)"
+	spBtn.ZIndex = 18
+	spBtn.Parent = scrollCard
+	UIController.Elements.BuyScrollPackBtn = spBtn
+
+	local spbCorn = Instance.new("UICorner")
+	spbCorn.CornerRadius = UDim.new(0, 10)
+	spbCorn.Parent = spBtn
+
+	spBtn.MouseButton1Click:Connect(function()
+		if UIController.Remotes.PurchaseEventOffer then
+			UIController.Remotes.PurchaseEventOffer:FireServer("diamond_scroll_pack")
+		end
+	end)
+
+	-- Banner 3: Blacksmith Arsenal Pack (Diamond Purchase)
+	local arsenalCard = Instance.new("Frame")
+	arsenalCard.Name = "ArsenalBundleCard"
+	arsenalCard.Size = UDim2.new(1, 0, 0, 150)
+	arsenalCard.BackgroundColor3 = Color3.fromRGB(24, 30, 42)
+	arsenalCard.ZIndex = 17
+	arsenalCard.Parent = scroll
+
+	local baCorn = Instance.new("UICorner")
+	baCorn.CornerRadius = UDim.new(0, 12)
+	baCorn.Parent = arsenalCard
+
+	local baStroke = Instance.new("UIStroke")
+	baStroke.Color = Color3.fromRGB(60, 140, 240)
+	baStroke.Thickness = 2
+	baStroke.Parent = arsenalCard
+
+	local baTitle = Instance.new("TextLabel")
+	baTitle.Size = UDim2.new(0.65, 0, 0.22, 0)
+	baTitle.Position = UDim2.new(0.04, 0, 0.08, 0)
+	baTitle.BackgroundTransparency = 1
+	baTitle.TextColor3 = Color3.fromRGB(100, 200, 255)
+	baTitle.TextScaled = true
+	baTitle.Font = Enum.Font.GothamBlack
+	baTitle.TextXAlignment = Enum.TextXAlignment.Left
+	baTitle.Text = "🗡️ BLACKSMITH ARSENAL PACK"
+	baTitle.ZIndex = 18
+	baTitle.Parent = arsenalCard
+	UIController.Elements.ArsenalTitle = baTitle
+
+	local baContent = Instance.new("TextLabel")
+	baContent.Size = UDim2.new(0.65, 0, 0.6, 0)
+	baContent.Position = UDim2.new(0.04, 0, 0.32, 0)
+	baContent.BackgroundTransparency = 1
+	baContent.TextColor3 = Color3.fromRGB(215, 230, 245)
+	baContent.TextScaled = true
+	baContent.Font = Enum.Font.Gotham
+	baContent.TextXAlignment = Enum.TextXAlignment.Left
+	baContent.Text = "Warrior Combat Gear Starter Set:\n✦ 1x Guaranteed Epic Dragon Fang Spear\n✦ 1x Heavy Knight Plate\n✦ +20,000 Hero Elixir"
+	baContent.ZIndex = 18
+	baContent.Parent = arsenalCard
+
+	local baBtn = Instance.new("TextButton")
+	baBtn.Size = UDim2.new(0.26, 0, 0.45, 0)
+	baBtn.Position = UDim2.new(0.70, 0, 0.28, 0)
+	baBtn.BackgroundColor3 = Color3.fromRGB(45, 120, 210)
+	baBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	baBtn.TextScaled = true
+	baBtn.Font = Enum.Font.GothamBlack
+	baBtn.Text = "💎 BUY (800 💎)"
+	baBtn.ZIndex = 18
+	baBtn.Parent = arsenalCard
+	UIController.Elements.BuyArsenalBtn = baBtn
+
+	local babCorn = Instance.new("UICorner")
+	babCorn.CornerRadius = UDim.new(0, 10)
+	babCorn.Parent = baBtn
+
+	baBtn.MouseButton1Click:Connect(function()
+		if UIController.Remotes.PurchaseEventOffer then
+			UIController.Remotes.PurchaseEventOffer:FireServer("blacksmith_pack")
+		end
+	end)
+
+	-- Banner 4: 7-Day Login Event Preview
 	local loginCard = Instance.new("Frame")
-	loginCard.Size = UDim2.new(1, 0, 0, 110)
+	loginCard.Size = UDim2.new(1, 0, 0, 105)
 	loginCard.BackgroundColor3 = Color3.fromRGB(28, 32, 45)
 	loginCard.ZIndex = 17
 	loginCard.Parent = scroll
@@ -1878,6 +2007,77 @@ function UIController.BuildEventsModal()
 	lcDesc.Text = "Log in every day to claim free Diamonds, Basic & Elite Scrolls, and on Day 7 claim your free 5★ Hero Selector!"
 	lcDesc.ZIndex = 18
 	lcDesc.Parent = loginCard
+
+	UIController.RefreshEventsUI()
+end
+
+function UIController.RefreshEventsUI()
+	local sTitle = UIController.Elements.StarterTitle
+	local sBtn = UIController.Elements.BuyStarterBtn
+	local spTitle = UIController.Elements.ScrollPackTitle
+	local spBtn = UIController.Elements.BuyScrollPackBtn
+	local baTitle = UIController.Elements.ArsenalTitle
+	local baBtn = UIController.Elements.BuyArsenalBtn
+
+	local claimed = UIController.State.EventOffersClaimed or {}
+	local isStarterClaimed = UIController.State.StarterPackPurchased or claimed["starter_pack"]
+
+	-- Starter Pack
+	if sTitle and sBtn then
+		if isStarterClaimed then
+			sTitle.Text = "🌟 NOVICE HEADSTART BUNDLE [TERBELI / CLAIMED ✓]"
+			sTitle.TextColor3 = Color3.fromRGB(160, 230, 180)
+			sBtn.Text = "TERBELI ✓"
+			sBtn.BackgroundColor3 = Color3.fromRGB(45, 52, 60)
+			sBtn.TextColor3 = Color3.fromRGB(130, 180, 140)
+			sBtn.Active = false
+		else
+			sTitle.Text = "🌟 NOVICE HEADSTART BUNDLE (LIMITED 1x)"
+			sTitle.TextColor3 = Color3.fromRGB(255, 220, 80)
+			sBtn.Text = "🛒 BUY FOR R$ 99"
+			sBtn.BackgroundColor3 = Color3.fromRGB(45, 175, 75)
+			sBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+			sBtn.Active = true
+		end
+	end
+
+	-- Elite Commander Supply
+	if spTitle and spBtn then
+		if claimed["diamond_scroll_pack"] then
+			spTitle.Text = "🔮 ELITE COMMANDER SUPPLY [TERBELI / CLAIMED ✓]"
+			spTitle.TextColor3 = Color3.fromRGB(160, 230, 180)
+			spBtn.Text = "TERBELI ✓"
+			spBtn.BackgroundColor3 = Color3.fromRGB(45, 52, 60)
+			spBtn.TextColor3 = Color3.fromRGB(130, 180, 140)
+			spBtn.Active = false
+		else
+			spTitle.Text = "🔮 ELITE COMMANDER SUPPLY (10x SCROLLS)"
+			spTitle.TextColor3 = Color3.fromRGB(220, 140, 255)
+			spBtn.Text = "💎 BUY (1,800 💎)"
+			spBtn.BackgroundColor3 = Color3.fromRGB(160, 60, 210)
+			spBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+			spBtn.Active = true
+		end
+	end
+
+	-- Blacksmith Arsenal Pack
+	if baTitle and baBtn then
+		if claimed["blacksmith_pack"] then
+			baTitle.Text = "🗡️ BLACKSMITH ARSENAL [TERBELI / CLAIMED ✓]"
+			baTitle.TextColor3 = Color3.fromRGB(160, 230, 180)
+			baBtn.Text = "TERBELI ✓"
+			baBtn.BackgroundColor3 = Color3.fromRGB(45, 52, 60)
+			baBtn.TextColor3 = Color3.fromRGB(130, 180, 140)
+			baBtn.Active = false
+		else
+			baTitle.Text = "🗡️ BLACKSMITH ARSENAL (DRAGON SPEAR + PLATE)"
+			baTitle.TextColor3 = Color3.fromRGB(100, 200, 255)
+			baBtn.Text = "💎 BUY (800 💎)"
+			baBtn.BackgroundColor3 = Color3.fromRGB(45, 120, 210)
+			baBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+			baBtn.Active = true
+		end
+	end
 end
 
 -- =========================================================================
@@ -2532,6 +2732,8 @@ function UIController.ToggleModal(modalName: string)
 		UIController.RefreshMailboxUI()
 	elseif modalName == "MissionsModal" and willBeVisible then
 		UIController.RefreshMissionsUI()
+	elseif modalName == "EventsModal" and willBeVisible then
+		UIController.RefreshEventsUI()
 	end
 end
 
@@ -2695,6 +2897,9 @@ function UIController.OnStateSync(data: any)
 	end
 	if UIController.Elements.MissionsModal and UIController.Elements.MissionsModal.Visible then
 		UIController.RefreshMissionsUI()
+	end
+	if UIController.Elements.EventsModal and UIController.Elements.EventsModal.Visible then
+		UIController.RefreshEventsUI()
 	end
 end
 

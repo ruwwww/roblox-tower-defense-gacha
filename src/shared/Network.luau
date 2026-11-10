@@ -34,6 +34,7 @@ local Network = {
 
 		-- Events & Monetization
 		PurchaseStarterPack = "PurchaseStarterPack",
+		PurchaseEventOffer = "PurchaseEventOffer",
 
 		-- World Interaction
 		OpenLobbyModal = "OpenLobbyModal",

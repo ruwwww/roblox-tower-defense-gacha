@@ -57,6 +57,7 @@ export type PlayerProfile = {
 	Mailbox: { [string]: MailItem },
 	DailyMissions: DailyMissionsData,
 	StarterPackPurchased: boolean,
+	EventOffersClaimed: { [string]: boolean },
 }
 
 local ProfileService = {
@@ -188,6 +189,7 @@ function ProfileService.SetupPlayer(player: Player)
 			ClaimedMissions = {},
 		},
 		StarterPackPurchased = false,
+		EventOffersClaimed = {},
 	}
 
 	ProfileService.Profiles[player] = profile
@@ -377,33 +379,101 @@ function ProfileService.ClaimDailyChest(player: Player, tier: number)
 end
 
 function ProfileService.PurchaseStarterPack(player: Player)
+	ProfileService.PurchaseEventOffer(player, "starter_pack")
+end
+
+function ProfileService.PurchaseEventOffer(player: Player, offerId: string)
 	local prof = ProfileService.Get(player)
 	if not prof then return end
-	if prof.StarterPackPurchased then
-		if ProfileService.Remotes.NotifyMessage then
-			ProfileService.Remotes.NotifyMessage:FireClient(player, "Novice Headstart Bundle already purchased!", Color3.fromRGB(255, 120, 120))
+
+	if offerId == "starter_pack" then
+		if prof.StarterPackPurchased then
+			if ProfileService.Remotes.NotifyMessage then
+				ProfileService.Remotes.NotifyMessage:FireClient(player, "Novice Headstart Bundle already purchased / claimed!", Color3.fromRGB(255, 120, 120))
+			end
+			return
 		end
-		return
-	end
 
-	prof.StarterPackPurchased = true
-	prof.Gold += 50000
-	prof.Elixir += 20000
-	prof.EliteScrolls += 10
+		prof.StarterPackPurchased = true
+		prof.EventOffersClaimed["starter_pack"] = true
+		prof.Gold += 50000
+		prof.Elixir += 20000
+		prof.EliteScrolls += 10
 
-	-- Award 5★ Hero Brunhilda Shieldmaiden
-	local heroUid = HttpService:GenerateGUID(false)
-	prof.Heroes[heroUid] = {
-		Uid = heroUid,
-		HeroId = "valkyrie_aegis",
-		Level = 1,
-		Star = 5,
-		Equipment = {},
-	}
+		-- Award 5★ Hero Brunhilda Shieldmaiden
+		local heroUid = HttpService:GenerateGUID(false)
+		prof.Heroes[heroUid] = {
+			Uid = heroUid,
+			HeroId = "valkyrie_aegis",
+			Level = 1,
+			Star = 5,
+			Equipment = {},
+		}
 
-	ProfileService.SyncProfile(player)
-	if ProfileService.Remotes.NotifyMessage then
-		ProfileService.Remotes.NotifyMessage:FireClient(player, "🎉 Congratulations! Novice Headstart Bundle unlocked: 5★ Brunhilda + 10x Elite Scrolls!", Color3.fromRGB(255, 215, 60))
+		ProfileService.SyncProfile(player)
+		if ProfileService.Remotes.NotifyMessage then
+			ProfileService.Remotes.NotifyMessage:FireClient(player, "🎉 Novice Headstart Bundle Claimed: 5★ Brunhilda + 10x Elite Scrolls!", Color3.fromRGB(255, 215, 60))
+		end
+
+	elseif offerId == "diamond_scroll_pack" then
+		if prof.EventOffersClaimed["diamond_scroll_pack"] then
+			if ProfileService.Remotes.NotifyMessage then
+				ProfileService.Remotes.NotifyMessage:FireClient(player, "Elite Commander Supply already purchased!", Color3.fromRGB(255, 120, 120))
+			end
+			return
+		end
+
+		if prof.Diamonds < 1800 then
+			if ProfileService.Remotes.NotifyMessage then
+				ProfileService.Remotes.NotifyMessage:FireClient(player, "Not enough Diamonds! Need 1,800 💎", Color3.fromRGB(255, 80, 80))
+			end
+			return
+		end
+
+		prof.Diamonds -= 1800
+		prof.EliteScrolls += 10
+		prof.Gold += 30000
+		prof.EventOffersClaimed["diamond_scroll_pack"] = true
+
+		ProfileService.SyncProfile(player)
+		if ProfileService.Remotes.NotifyMessage then
+			ProfileService.Remotes.NotifyMessage:FireClient(player, "🎁 Purchased Elite Commander Supply: +10x Elite Scrolls, +30k Gold!", Color3.fromRGB(100, 255, 140))
+		end
+
+	elseif offerId == "blacksmith_pack" then
+		if prof.EventOffersClaimed["blacksmith_pack"] then
+			if ProfileService.Remotes.NotifyMessage then
+				ProfileService.Remotes.NotifyMessage:FireClient(player, "Blacksmith Arsenal Pack already purchased!", Color3.fromRGB(255, 120, 120))
+			end
+			return
+		end
+
+		if prof.Diamonds < 800 then
+			if ProfileService.Remotes.NotifyMessage then
+				ProfileService.Remotes.NotifyMessage:FireClient(player, "Not enough Diamonds! Need 800 💎", Color3.fromRGB(255, 80, 80))
+			end
+			return
+		end
+
+		prof.Diamonds -= 800
+		prof.Elixir += 20000
+		prof.EventOffersClaimed["blacksmith_pack"] = true
+
+		table.insert(prof.EquipmentInventory, {
+			Uid = HttpService:GenerateGUID(false),
+			EquipmentId = "dragon_fang_spear",
+			EnhanceLevel = 0,
+		})
+		table.insert(prof.EquipmentInventory, {
+			Uid = HttpService:GenerateGUID(false),
+			EquipmentId = "knight_plate",
+			EnhanceLevel = 0,
+		})
+
+		ProfileService.SyncProfile(player)
+		if ProfileService.Remotes.NotifyMessage then
+			ProfileService.Remotes.NotifyMessage:FireClient(player, "🎁 Purchased Blacksmith Arsenal Pack: Dragon Spear + Knight Plate + 20k Elixir!", Color3.fromRGB(100, 255, 140))
+		end
 	end
 end
 
@@ -430,6 +500,7 @@ function ProfileService.SyncProfile(player: Player)
 		Mailbox = prof.Mailbox,
 		DailyMissions = prof.DailyMissions,
 		StarterPackPurchased = prof.StarterPackPurchased,
+		EventOffersClaimed = prof.EventOffersClaimed,
 	})
 end
 

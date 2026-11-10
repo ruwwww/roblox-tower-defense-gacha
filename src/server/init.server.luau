@@ -135,6 +135,12 @@ remotes.PurchaseStarterPack.OnServerEvent:Connect(function(player: Player)
 	ProfileService.PurchaseStarterPack(player)
 end)
 
+remotes.PurchaseEventOffer.OnServerEvent:Connect(function(player: Player, offerId: unknown)
+	if typeof(offerId) == "string" then
+		ProfileService.PurchaseEventOffer(player, offerId)
+	end
+end)
+
 remotes.FastAfkClaim.OnServerEvent:Connect(function(player)
 	IdleRewardService.FastAfkClaim(player)
 end)
