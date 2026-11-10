@@ -5,12 +5,7 @@ local Players = game:GetService("Players")
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Network = require(Shared:WaitForChild("Network"))
 
-local MapService = require(script:WaitForChild("Services"):WaitForChild("MapService"))
-local GachaService = require(script:WaitForChild("Services"):WaitForChild("GachaService"))
-local WaveService = require(script:WaitForChild("Services"):WaitForChild("WaveService"))
-local CombatService = require(script:WaitForChild("Services"):WaitForChild("CombatService"))
-
--- Create RemoteEvents container
+-- 1. Create RemoteEvents container FIRST so client never hangs
 local remotesFolder = ReplicatedStorage:FindFirstChild("Remotes")
 if not remotesFolder then
 	remotesFolder = Instance.new("Folder")
@@ -31,13 +26,20 @@ for _, eventName in pairs(Network.Events) do
 	end
 end
 
--- Initialize Services
+-- 2. Setup Map and Arena in Workspace immediately
+local MapService = require(script:WaitForChild("Services"):WaitForChild("MapService"))
 MapService.SetupMap()
+
+-- 3. Load & Initialize Game Services
+local GachaService = require(script:WaitForChild("Services"):WaitForChild("GachaService"))
+local WaveService = require(script:WaitForChild("Services"):WaitForChild("WaveService"))
+local CombatService = require(script:WaitForChild("Services"):WaitForChild("CombatService"))
+
 GachaService.Init(remotes)
 WaveService.Init(remotes)
 CombatService.Init(remotes)
 
--- Connect Inbound Client Remotes
+-- 4. Connect Inbound Client Remotes
 remotes.ClientReady.OnServerEvent:Connect(function(player)
 	GachaService.SyncState(player)
 	WaveService.BroadcastWaveState()
@@ -83,4 +85,4 @@ remotes.StartWaveVote.OnServerEvent:Connect(function(_player)
 	WaveService.StartNextWave()
 end)
 
-print("[Server] Tower Defense x Gacha Systems fully initialized.")
+print("[Server] Tower Defense x Gacha Systems fully initialized and Map generated.")

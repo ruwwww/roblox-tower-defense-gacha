@@ -1,6 +1,6 @@
 --!strict
 
-export type UnitRarity = 3 | 4 | 5 | 6
+export type UnitRarity = number -- 3 to 6 stars
 
 export type UnitStats = {
 	Damage: number,
