@@ -33,6 +33,7 @@ local UIController = {
 		EnemiesAlive = 0,
 	},
 	SelectedTowerId = nil :: string?,
+	LastEquippedKey = "" :: string,
 	Elements = {} :: { [string]: any },
 }
 
@@ -113,7 +114,7 @@ function UIController.BuildUI()
 	local topLayout = Instance.new("UIListLayout")
 	topLayout.FillDirection = Enum.FillDirection.Horizontal
 	topLayout.VerticalAlignment = Enum.VerticalAlignment.Center
-	topLayout.HorizontalAlignment = Enum.HorizontalAlignment.SpaceBetween
+	topLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 	topLayout.Padding = UDim.new(0, 16)
 	topLayout.Parent = topBar
 
@@ -808,6 +809,10 @@ function UIController.OpenTowerInspect(towerId: string, unitId: string, model: M
 		return
 	end
 
+	local level = (model:GetAttribute("Level") :: number?) or 0
+	local ownerName = (model:GetAttribute("OwnerName") :: string?) or ""
+	local isOwner = (ownerName == LocalPlayer.Name)
+
 	UIController.SelectedTowerId = towerId
 	local inspect = UIController.Elements.InspectModal
 	inspect.Visible = true
@@ -815,16 +820,31 @@ function UIController.OpenTowerInspect(towerId: string, unitId: string, model: M
 	local name = UIController.Elements.InspectName
 	local stats = UIController.Elements.InspectStats
 	local upgrade = UIController.Elements.InspectUpgrade
+	local sell = UIController.Elements.InspectSell
+	local targetBtn = UIController.Elements.InspectTarget
 
-	name.Text = uDef.Name .. " " .. GetRarityStars(uDef.Rarity)
-	stats.Text = string.format("Role: %s\nDamage: %d\nRange: %d studs\nCooldown: %.2fs",
-		uDef.Role, uDef.Stats.Damage, uDef.Stats.Range, uDef.Stats.Cooldown)
+	local currentStats = UnitData.GetStatsAtLevel(unitId, level) or uDef.Stats
 
-	local upCost = UnitData.GetUpgradeCost(unitId, 0)
-	if upCost then
-		upgrade.Text = "UPGRADE - $" .. tostring(upCost)
-	else
-		upgrade.Text = "MAX LEVEL"
+	name.Text = uDef.Name .. " " .. GetRarityStars(uDef.Rarity) .. string.format(" [Lv.%d]", level)
+	stats.Text = string.format("Role: %s | Owner: %s\nDamage: %d | Range: %d studs\nCooldown: %.2fs%s",
+		uDef.Role, ownerName, currentStats.Damage, math.floor(currentStats.Range), currentStats.Cooldown,
+		(currentStats.SlowPercent and string.format(" | Slow: %d%%", math.floor(currentStats.SlowPercent * 100)) or "")
+	)
+
+	upgrade.Visible = isOwner
+	sell.Visible = isOwner
+	targetBtn.Visible = isOwner
+
+	if isOwner then
+		local upCost = UnitData.GetUpgradeCost(unitId, level)
+		if upCost then
+			upgrade.Text = string.format("UPGRADE (Lv.%d) - $%d", level + 1, upCost)
+		else
+			upgrade.Text = "MAX LEVEL REACHED"
+		end
+
+		local sellVal = UnitData.GetSellValue(unitId, level)
+		sell.Text = string.format("SELL (+ $%d Gold)", sellVal)
 	end
 end
 
@@ -1044,10 +1064,18 @@ function UIController.OnStateSync(data: any)
 		pityLabel.Text = string.format("Guaranteed 5★ in %d pulls | Guaranteed 6★ in %d pulls", epicPityRem, legPityRem)
 	end
 
-	UIController.UpdateHotbar()
+	local currentEquippedKey = table.concat(UIController.State.Equipped or {}, ",")
+	if currentEquippedKey ~= UIController.LastEquippedKey then
+		UIController.LastEquippedKey = currentEquippedKey
+		UIController.UpdateHotbar()
+	end
 end
 
 function UIController.OnGachaResult(rolledUnits: { any })
+	local invModal = UIController.Elements.InventoryModal
+	if invModal and invModal.Visible then
+		UIController.RefreshInventoryGrid()
+	end
 	local reveal = UIController.Elements.GachaRevealModal
 	local grid = UIController.Elements.ResultsGrid
 	if not reveal or not grid then

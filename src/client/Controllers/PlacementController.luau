@@ -14,6 +14,8 @@ local Mouse = LocalPlayer:GetMouse()
 
 local PlacementController = {
 	IsPlacing = false,
+	HasValidPlacement = false,
+	CurrentPlacementPos = nil :: Vector3?,
 	SelectedUnitId = nil :: string?,
 	PreviewModel = nil :: Model?,
 	RangeCircle = nil :: Part?,
@@ -214,23 +216,23 @@ function PlacementController.UpdatePreview()
 		if PlacementController.RangeCircle then
 			PlacementController.RangeCircle.Color = isValid and Color3.fromRGB(100, 220, 255) or Color3.fromRGB(255, 60, 60)
 		end
+
+		PlacementController.HasValidPlacement = isValid
+		PlacementController.CurrentPlacementPos = snappedPos
+	else
+		PlacementController.HasValidPlacement = false
 	end
 end
 
 function PlacementController.ConfirmPlacement()
-	if not PlacementController.IsPlacing or not PlacementController.SelectedUnitId or not PlacementController.PreviewModel then
+	if not PlacementController.IsPlacing or not PlacementController.SelectedUnitId or not PlacementController.HasValidPlacement or not PlacementController.CurrentPlacementPos then
 		return
 	end
 
-	local base = PlacementController.PreviewModel:FindFirstChild("Base") :: Part?
-	if not base then
-		return
-	end
-
-	local pos = MathUtil.SnapToGrid(base.Position, 4, 0)
+	local targetPos = PlacementController.CurrentPlacementPos
 
 	if PlacementController.Remotes.PlaceTower then
-		PlacementController.Remotes.PlaceTower:FireServer(PlacementController.SelectedUnitId, pos)
+		PlacementController.Remotes.PlaceTower:FireServer(PlacementController.SelectedUnitId, targetPos)
 	end
 
 	PlacementController.CancelPlacement()

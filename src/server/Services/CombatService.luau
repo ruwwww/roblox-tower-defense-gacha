@@ -202,6 +202,25 @@ function CombatService.PlaceTower(player: Player, unitId: string, position: Vect
 		return
 	end
 
+	-- Verify unit is currently equipped in active hotbar
+	if not table.find(pState.Equipped, unitId) then
+		if CombatService.Remotes.NotifyMessage then
+			CombatService.Remotes.NotifyMessage:FireClient(player, "Unit must be equipped in your loadout to place!", Color3.fromRGB(255, 120, 60))
+		end
+		return
+	end
+
+	-- Check coordinate validity (non-NaN, finite, within map bounds)
+	if position.X ~= position.X or position.Y ~= position.Y or position.Z ~= position.Z then
+		return
+	end
+	if math.abs(position.X) > 160 or math.abs(position.Z) > 120 then
+		if CombatService.Remotes.NotifyMessage then
+			CombatService.Remotes.NotifyMessage:FireClient(player, "Cannot place outside the arena boundary!", Color3.fromRGB(255, 80, 80))
+		end
+		return
+	end
+
 	-- Snap to grid
 	position = MathUtil.SnapToGrid(position, 4, 0)
 
@@ -249,6 +268,7 @@ function CombatService.PlaceTower(player: Player, unitId: string, position: Vect
 	model:SetAttribute("TowerId", towerId)
 	model:SetAttribute("UnitId", unitId)
 	model:SetAttribute("OwnerName", player.Name)
+	model:SetAttribute("Level", 0)
 
 	CombatService.PlacedTowers[towerId] = tower
 	UpdateTowerBillboard(tower)
@@ -284,6 +304,7 @@ function CombatService.UpgradeTower(player: Player, towerId: string)
 	end
 
 	tower.Level += 1
+	tower.Model:SetAttribute("Level", tower.Level)
 	UpdateTowerBillboard(tower)
 
 	-- Visual upgrade flash

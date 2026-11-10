@@ -138,22 +138,25 @@ function GachaService.RollGacha(player: Player, bannerId: string, isMulti: boole
 		if state.PityLegendary >= banner.PityLegendaryThreshold then
 			rolledRarity = 6
 			state.PityLegendary = 0
+			state.PityEpic = 0
 		elseif state.PityEpic >= banner.PityEpicThreshold then
 			-- Guaranteed at least 5★, small chance for 6★
 			local roll = RNG:NextNumber()
 			if roll <= (banner.Rates[6] / (banner.Rates[5] + banner.Rates[6])) then
 				rolledRarity = 6
 				state.PityLegendary = 0
+				state.PityEpic = 0
 			else
 				rolledRarity = 5
+				state.PityEpic = 0
 			end
-			state.PityEpic = 0
 		else
 			-- Standard roll
 			local roll = RNG:NextNumber()
 			if roll <= banner.Rates[6] then
 				rolledRarity = 6
 				state.PityLegendary = 0
+				state.PityEpic = 0
 			elseif roll <= (banner.Rates[6] + banner.Rates[5]) then
 				rolledRarity = 5
 				state.PityEpic = 0
