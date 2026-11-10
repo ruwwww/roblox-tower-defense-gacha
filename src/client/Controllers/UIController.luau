@@ -654,15 +654,15 @@ function UIController.RefreshFormationUI()
 			nameLbl.Parent = slotBox
 
 			local lvlLbl = Instance.new("TextLabel")
-			lylLbl.Size = UDim2.new(0.9, 0, 0.25, 0)
-			lylLbl.Position = UDim2.new(0.05, 0, 0.48, 0)
-			lylLbl.BackgroundTransparency = 1
-			lylLbl.TextColor3 = Color3.fromRGB(100, 220, 255)
-			lylLbl.TextScaled = true
-			lylLbl.Font = Enum.Font.GothamBold
-			lylLbl.Text = "Lv." .. inst.Level .. " " .. GetStars(inst.Star)
-			lylLbl.ZIndex = 18
-			lylLbl.Parent = slotBox
+			lvlLbl.Size = UDim2.new(0.9, 0, 0.25, 0)
+			lvlLbl.Position = UDim2.new(0.05, 0, 0.48, 0)
+			lvlLbl.BackgroundTransparency = 1
+			lvlLbl.TextColor3 = Color3.fromRGB(100, 220, 255)
+			lvlLbl.TextScaled = true
+			lvlLbl.Font = Enum.Font.GothamBold
+			lvlLbl.Text = "Lv." .. inst.Level .. " " .. GetStars(inst.Star)
+			lvlLbl.ZIndex = 18
+			lvlLbl.Parent = slotBox
 
 			local removeBtn = Instance.new("TextButton")
 			removeBtn.Size = UDim2.new(0.85, 0, 0.22, 0)

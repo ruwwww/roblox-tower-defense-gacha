@@ -25,9 +25,11 @@ local BattleArenaController = {
 	ActiveConnections = {} :: { RBXScriptConnection },
 }
 
-local function GridToWorld(gridX: number, gridY: number, heightOffset: number): Vector3
-	local localX = (gridX - (GRID_W + 1) / 2) * TILE_SIZE
-	local localZ = (gridY - (GRID_H + 1) / 2) * TILE_SIZE
+local function GridToWorld(gridX: number?, gridY: number?, heightOffset: number): Vector3
+	local gx = gridX or 5
+	local gy = gridY or 4
+	local localX = (gx - (GRID_W + 1) / 2) * TILE_SIZE
+	local localZ = (gy - (GRID_H + 1) / 2) * TILE_SIZE
 	return ARENA_ORIGIN + Vector3.new(localX, heightOffset, localZ)
 end
 
@@ -55,7 +57,16 @@ function BattleArenaController.Start3DBattle(data: any, onComplete: () -> ())
 
 	local stageDef = StageData.Get(data.StageId)
 	local tilesMap = stageDef and stageDef.Tiles or {}
-	local pathCoords = stageDef and stageDef.PathCoords or {}
+	local pathCoords = (stageDef and stageDef.PathCoords and #stageDef.PathCoords > 0) and stageDef.PathCoords or {
+		Vector2.new(1, 4),
+		Vector2.new(3, 4),
+		Vector2.new(3, 2),
+		Vector2.new(6, 2),
+		Vector2.new(6, 6),
+		Vector2.new(8, 6),
+		Vector2.new(8, 4),
+		Vector2.new(10, 4),
+	}
 
 	-- 1. Build Physical 3D Tile Board (2D Grid rendered with 3D parts)
 	local floorBase = Instance.new("Part")
@@ -251,8 +262,10 @@ function BattleArenaController.Start3DBattle(data: any, onComplete: () -> ())
 	local heroParts: { [string]: Part } = {}
 	if data.Formation then
 		for _, heroUnit in ipairs(data.Formation) do
+			local gx = (heroUnit.GridPos and heroUnit.GridPos.X) or heroUnit.GridX or 5
+			local gy = (heroUnit.GridPos and heroUnit.GridPos.Y) or heroUnit.GridY or 4
 			local hY = (heroUnit.PlacementType == "Ground") and 2.0 or 5.5
-			local hPos = GridToWorld(heroUnit.GridX, heroUnit.GridY, hY)
+			local hPos = GridToWorld(gx, gy, hY)
 
 			local heroPart = Instance.new("Part")
 			heroPart.Name = "Hero_" .. heroUnit.HeroId
@@ -302,7 +315,7 @@ function BattleArenaController.Start3DBattle(data: any, onComplete: () -> ())
 			hpBarFill.BorderSizePixel = 0
 			hpBarFill.Parent = hpBarBack
 
-			heroParts[heroUnit.GridX .. "_" .. heroUnit.GridY] = heroPart
+			heroParts[gx .. "_" .. gy] = heroPart
 		end
 	end
 
@@ -322,13 +335,15 @@ function BattleArenaController.Start3DBattle(data: any, onComplete: () -> ())
 				enemyPart.CanCollide = false
 				enemyPart.Material = Enum.Material.Neon
 				enemyPart.Color = Color3.fromRGB(230, 60, 40)
-				enemyPart.Position = GridToWorld(pathCoords[1].X, pathCoords[1].Y, 2.0)
+				local startCoord = pathCoords[1] or Vector2.new(1, 4)
+				enemyPart.Position = GridToWorld(startCoord.X, startCoord.Y, 2.0)
 				enemyPart.Parent = arena
 
 				-- Move enemy along path waypoints
 				for wIdx = 2, #pathCoords do
 					if isFinished then break end
 					local targetCoord = pathCoords[wIdx]
+					if not targetCoord then continue end
 					local targetPos = GridToWorld(targetCoord.X, targetCoord.Y, 2.0)
 					local dist = (targetPos - enemyPart.Position).Magnitude
 					local moveTime = (dist / 14) / BattleArenaController.Speed
