@@ -21,6 +21,7 @@ local BattleArenaController = {
 	ArenaFolder = nil :: Folder?,
 	IsPlaying = false,
 	Speed = 1,
+	LobbyCFrame = nil :: CFrame?,
 }
 
 local function GridToWorld(gridX: number?, gridY: number?, heightOffset: number): Vector3
@@ -214,7 +215,9 @@ function BattleArenaController.Start3DBattle(data: any, onComplete: () -> ())
 	-- 2. Teleport Player to Arena & Unlock Free Camera / Exploration Movement
 	local character = LocalPlayer.Character
 	local hrp = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
-	local prevPlayerCFrame = hrp and hrp.CFrame or CFrame.new(0, 3, 0)
+	if hrp and not BattleArenaController.LobbyCFrame then
+		BattleArenaController.LobbyCFrame = hrp.CFrame
+	end
 	if hrp then
 		local startSpawnPos = ARENA_ORIGIN + Vector3.new(0, 3, -(GRID_H * TILE_SIZE / 2 + 7))
 		hrp.CFrame = CFrame.lookAt(startSpawnPos, ARENA_ORIGIN)
@@ -361,27 +364,13 @@ function BattleArenaController.Start3DBattle(data: any, onComplete: () -> ())
 		if battleGui then
 			battleGui:Destroy()
 		end
-		if arena then
-			arena:Destroy()
-		end
 
-		-- Return player character to Lobby
-		if hrp and prevPlayerCFrame then
-			hrp.CFrame = prevPlayerCFrame
-		end
-
-		Camera.CameraType = Enum.CameraType.Custom
-		local hum = character and character:FindFirstChildOfClass("Humanoid")
-		if hum then
-			Camera.CameraSubject = hum
-		end
-
-		if not isManualExit then
-			onComplete()
-		else
-			-- Manual Exit: return directly to lobby
+		if isManualExit then
+			BattleArenaController.ReturnToLobby()
 			local UIController = require(script.Parent:WaitForChild("UIController"))
 			UIController.SetLobbyVisible(true)
+		else
+			onComplete()
 		end
 	end
 
@@ -691,12 +680,29 @@ function BattleArenaController.Start3DBattle(data: any, onComplete: () -> ())
 	end)
 end
 
-function BattleArenaController.Stop()
+function BattleArenaController.ReturnToLobby()
 	BattleArenaController.IsPlaying = false
 	if BattleArenaController.ArenaFolder then
 		BattleArenaController.ArenaFolder:Destroy()
 		BattleArenaController.ArenaFolder = nil
 	end
+
+	local character = LocalPlayer.Character
+	local hrp = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if hrp and BattleArenaController.LobbyCFrame then
+		hrp.CFrame = BattleArenaController.LobbyCFrame
+	end
+	BattleArenaController.LobbyCFrame = nil
+
+	Camera.CameraType = Enum.CameraType.Custom
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		Camera.CameraSubject = humanoid
+	end
+end
+
+function BattleArenaController.Stop()
+	BattleArenaController.ReturnToLobby()
 end
 
 return BattleArenaController

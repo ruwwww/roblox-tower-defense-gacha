@@ -43,6 +43,7 @@ local UIController = {
 	SelectedHeroUid = nil :: string?,
 	SelectedChapter = 1,
 	SelectedStageId = "1-1",
+	CurrentBattleData = nil :: any,
 	CurrentCampaignView = "Stages" :: "Stages" | "Chapters",
 	SelectedMailId = nil :: string?,
 	Elements = {} :: { [string]: any },
@@ -3225,23 +3226,88 @@ function UIController.BuildBattleResultModal()
 	rewardsLbl.Parent = modal
 	UIController.Elements.BattleResultRewards = rewardsLbl
 
-	local claimBtn = Instance.new("TextButton")
-	claimBtn.Size = UDim2.new(0.5, 0, 0, 44)
-	claimBtn.Position = UDim2.new(0.25, 0, 0.82, 0)
-	claimBtn.BackgroundColor3 = Color3.fromRGB(45, 140, 220)
-	claimBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-	claimBtn.TextScaled = true
-	claimBtn.Font = Enum.Font.GothamBold
-	claimBtn.Text = "RETURN TO LOBBY"
-	claimBtn.ZIndex = 31
-	claimBtn.Parent = modal
+	local lobbyBtn = Instance.new("TextButton")
+	lobbyBtn.Name = "LobbyBtn"
+	lobbyBtn.Size = UDim2.new(0.42, 0, 0, 46)
+	lobbyBtn.Position = UDim2.new(0.06, 0, 0.81, 0)
+	lobbyBtn.BackgroundColor3 = Color3.fromRGB(45, 55, 75)
+	lobbyBtn.TextColor3 = Color3.fromRGB(240, 245, 255)
+	lobbyBtn.TextScaled = true
+	lobbyBtn.Font = Enum.Font.GothamBold
+	lobbyBtn.Text = "🏠 RETURN TO LOBBY"
+	lobbyBtn.ZIndex = 32
+	lobbyBtn.Parent = modal
+	UIController.Elements.BattleResultLobbyBtn = lobbyBtn
 
-	local bCorner = Instance.new("UICorner")
-	bCorner.CornerRadius = UDim.new(0, 10)
-	bCorner.Parent = claimBtn
+	local lCorner = Instance.new("UICorner")
+	lCorner.CornerRadius = UDim.new(0, 10)
+	lCorner.Parent = lobbyBtn
 
-	claimBtn.MouseButton1Click:Connect(function()
+	local lStroke = Instance.new("UIStroke")
+	lStroke.Color = Color3.fromRGB(75, 90, 115)
+	lStroke.Thickness = 1.5
+	lStroke.Parent = lobbyBtn
+
+	lobbyBtn.MouseButton1Click:Connect(function()
 		modal.Visible = false
+		BattleArenaController.ReturnToLobby()
+		UIController.SetLobbyVisible(true)
+	end)
+
+	local nextBtn = Instance.new("TextButton")
+	nextBtn.Name = "NextStageBtn"
+	nextBtn.Size = UDim2.new(0.44, 0, 0, 46)
+	nextBtn.Position = UDim2.new(0.50, 0, 0.81, 0)
+	nextBtn.BackgroundColor3 = Color3.fromRGB(35, 175, 85)
+	nextBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	nextBtn.TextScaled = true
+	nextBtn.Font = Enum.Font.GothamBlack
+	nextBtn.Text = "NEXT LEVEL ➔"
+	nextBtn.ZIndex = 32
+	nextBtn.Parent = modal
+	UIController.Elements.BattleResultNextBtn = nextBtn
+
+	local nCorner = Instance.new("UICorner")
+	nCorner.CornerRadius = UDim.new(0, 10)
+	nCorner.Parent = nextBtn
+
+	local nStroke = Instance.new("UIStroke")
+	nStroke.Name = "NextStroke"
+	nStroke.Color = Color3.fromRGB(110, 240, 150)
+	nStroke.Thickness = 2
+	nStroke.Parent = nextBtn
+	UIController.Elements.BattleResultNextBtnStroke = nStroke
+
+	nextBtn.MouseButton1Click:Connect(function()
+		if not UIController.CurrentBattleData then return end
+		local currentStageId = UIController.CurrentBattleData.StageId
+		local isSuccess = UIController.CurrentBattleData.Success
+
+		modal.Visible = false
+
+		local targetStageId: string? = currentStageId
+		if isSuccess then
+			targetStageId = StageData.GetNextStageId(currentStageId)
+		end
+
+		if not targetStageId then
+			UIController.ShowNotification("All chapters and stages cleared! 🎉", Color3.fromRGB(255, 215, 60))
+			BattleArenaController.ReturnToLobby()
+			UIController.SetLobbyVisible(true)
+			return
+		end
+
+		local isSkipUnlocked = StageData.IsMilestoneReached(UIController.State.HighestClearedStage, "5-10")
+		local isSkip = isSkipUnlocked and (UIController.IsSkipAutobattle == true)
+
+		UIController.SelectedStageId = targetStageId
+		local nextChap = tonumber(targetStageId:match("(%d+)-")) or 1
+		UIController.SelectedChapter = nextChap
+		UIController.RefreshCampaignCards()
+
+		if UIController.Remotes.StartBattle then
+			UIController.Remotes.StartBattle:FireServer(targetStageId, isSkip)
+		end
 	end)
 end
 
@@ -3505,7 +3571,6 @@ function UIController.OnBattleFinished(data: any)
 		data.HighestClearedStage = UIController.State.HighestClearedStage
 
 		BattleArenaController.Start3DBattle(data, function()
-			UIController.SetLobbyVisible(true)
 			UIController.OnBattleFinishedDirect(data)
 		end)
 	else
@@ -3514,12 +3579,17 @@ function UIController.OnBattleFinished(data: any)
 end
 
 function UIController.OnBattleFinishedDirect(data: any)
+	UIController.CurrentBattleData = data
+
 	local modal = UIController.Elements.BattleResultModal
 	local title = UIController.Elements.BattleResultTitle
 	local starsLbl = UIController.Elements.BattleResultStars
 	local rewardsLbl = UIController.Elements.BattleResultRewards
 	local stroke = UIController.Elements.BattleResultStroke
-	if not modal or not title or not starsLbl or not rewardsLbl or not stroke then return end
+	local lobbyBtn = UIController.Elements.BattleResultLobbyBtn
+	local nextBtn = UIController.Elements.BattleResultNextBtn
+	local nextBtnStroke = UIController.Elements.BattleResultNextBtnStroke
+	if not modal or not title or not starsLbl or not rewardsLbl or not stroke or not lobbyBtn or not nextBtn then return end
 
 	if data.Success then
 		title.Text = "OPERATION SUCCESS"
@@ -3544,6 +3614,21 @@ function UIController.OnBattleFinishedDirect(data: any)
 			UIController.SelectedStageId = nextStage
 			local nextChap = tonumber(nextStage:match("(%d+)-")) or 1
 			UIController.SelectedChapter = nextChap
+
+			nextBtn.Visible = true
+			nextBtn.Text = string.format("NEXT LEVEL (%s) ➔", nextStage)
+			nextBtn.BackgroundColor3 = Color3.fromRGB(35, 175, 85)
+			if nextBtnStroke then
+				nextBtnStroke.Color = Color3.fromRGB(110, 240, 150)
+			end
+			lobbyBtn.Size = UDim2.new(0.42, 0, 0, 46)
+			lobbyBtn.Position = UDim2.new(0.06, 0, 0.81, 0)
+			lobbyBtn.Text = "🏠 RETURN TO LOBBY"
+		else
+			nextBtn.Visible = false
+			lobbyBtn.Size = UDim2.new(0.55, 0, 0, 46)
+			lobbyBtn.Position = UDim2.new(0.225, 0, 0.81, 0)
+			lobbyBtn.Text = "🏠 RETURN TO LOBBY (CLEARED)"
 		end
 	else
 		title.Text = "OPERATION FAILED"
@@ -3552,6 +3637,16 @@ function UIController.OnBattleFinishedDirect(data: any)
 		starsLbl.TextColor3 = Color3.fromRGB(200, 70, 70)
 		stroke.Color = Color3.fromRGB(200, 50, 50)
 		rewardsLbl.Text = "Strengthen your hero squad,\nascend your defenders, and try again!"
+
+		nextBtn.Visible = true
+		nextBtn.Text = string.format("RETRY STAGE (%s) 🔄", data.StageId)
+		nextBtn.BackgroundColor3 = Color3.fromRGB(220, 75, 55)
+		if nextBtnStroke then
+			nextBtnStroke.Color = Color3.fromRGB(255, 130, 110)
+		end
+		lobbyBtn.Size = UDim2.new(0.42, 0, 0, 46)
+		lobbyBtn.Position = UDim2.new(0.06, 0, 0.81, 0)
+		lobbyBtn.Text = "🏠 RETURN TO LOBBY"
 	end
 
 	modal.Visible = true
