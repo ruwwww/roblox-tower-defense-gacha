@@ -92,6 +92,7 @@ function HeroService.LevelUpHero(player: Player, heroUid: string)
 	prof.Elixir -= cost.Elixir
 	hero.Level += 1
 
+	ProfileService.RecordDailyProgress(player, "upgrade_hero_1", 1)
 	ProfileService.SyncProfile(player)
 
 	if HeroService.Remotes.NotifyMessage then
@@ -201,6 +202,7 @@ function HeroService.EquipGear(player: Player, heroUid: string, slot: string, eq
 	end
 
 	hero.Equipment[slot] = gearItem.EquipmentId
+	ProfileService.RecordDailyProgress(player, "equip_gear_1", 1)
 	ProfileService.SyncProfile(player)
 end
 

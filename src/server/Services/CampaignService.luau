@@ -27,9 +27,23 @@ function CampaignService.StartBattle(player: Player, stageId: string, isSkip: bo
 		return
 	end
 
-	local requestedStageIndex = tonumber(stageId:match("-(%d+)"))
-	local highestClearedStageIndex = tonumber(prof.HighestClearedStage:match("-(%d+)")) or 0
-	if requestedStageIndex and requestedStageIndex > highestClearedStageIndex + 1 then
+	local targetKey = StageData.ParseStageKey(stageId)
+	local clearedKey = StageData.ParseStageKey(prof.HighestClearedStage)
+
+	-- 1. Disallow repeat battles!
+	if targetKey <= clearedKey and clearedKey > 0 then
+		if CampaignService.Remotes.NotifyMessage then
+			CampaignService.Remotes.NotifyMessage:FireClient(
+				player,
+				"Stage already cleared! Repeat battle is disabled. Please challenge the next stage.",
+				Color3.fromRGB(255, 140, 60)
+			)
+		end
+		return
+	end
+
+	-- 2. Lock check: cannot skip past current stage
+	if not StageData.IsStageUnlocked(prof.HighestClearedStage, stageId) then
 		if CampaignService.Remotes.NotifyMessage then
 			CampaignService.Remotes.NotifyMessage:FireClient(
 				player,
@@ -40,7 +54,22 @@ function CampaignService.StartBattle(player: Player, stageId: string, isSkip: bo
 		return
 	end
 
-	-- Gather formation heroes
+	-- 3. Milestone check for Skip battle
+	if isSkip then
+		local hasSkipMilestone = StageData.IsMilestoneReached(prof.HighestClearedStage, "5-10")
+		if not hasSkipMilestone then
+			if CampaignService.Remotes.NotifyMessage then
+				CampaignService.Remotes.NotifyMessage:FireClient(
+					player,
+					"🔒 Skip Autobattle unlocks after clearing Stage 5-10!",
+					Color3.fromRGB(255, 180, 50)
+				)
+			end
+			return
+		end
+	end
+
+	-- 4. Gather formation heroes
 	local squad = {}
 	for _, heroUid in ipairs(prof.Formation) do
 		local inst = prof.Heroes[heroUid]
@@ -66,50 +95,43 @@ function CampaignService.StartBattle(player: Player, stageId: string, isSkip: bo
 		Gold = 0,
 		Elixir = 0,
 		Diamonds = 0,
-		Scrolls = 0,
+		BasicScrolls = 0,
+		EliteScrolls = 0,
 		Equipment = nil :: string?,
 		IsFirstClear = false,
 	}
 
 	if result.Success then
-		-- Check if first clear
-		local curIdx = tonumber(stageId:match("%-(%d+)")) or 0
-		local clearedIdx = tonumber(prof.HighestClearedStage:match("%-(%d+)")) or 0
+		earnedRewards.IsFirstClear = true
+		earnedRewards.Diamonds = stage.FirstClearRewards.Diamonds
+		earnedRewards.BasicScrolls = stage.FirstClearRewards.BasicScrolls or 1
+		earnedRewards.EliteScrolls = stage.FirstClearRewards.EliteScrolls or 0
+		earnedRewards.Elixir = stage.FirstClearRewards.Elixir
+		earnedRewards.Gold = stage.FirstClearRewards.Gold
+		earnedRewards.Equipment = stage.FirstClearRewards.GuaranteedEquipment
 
-		if curIdx > clearedIdx then
-			earnedRewards.IsFirstClear = true
-			earnedRewards.Diamonds = stage.FirstClearRewards.Diamonds
-			earnedRewards.Scrolls = stage.FirstClearRewards.Scrolls
-			earnedRewards.Elixir = stage.FirstClearRewards.Elixir
-			earnedRewards.Gold = stage.FirstClearRewards.Gold
-			earnedRewards.Equipment = stage.FirstClearRewards.GuaranteedEquipment
+		prof.Diamonds += earnedRewards.Diamonds
+		prof.BasicScrolls += earnedRewards.BasicScrolls
+		prof.EliteScrolls += earnedRewards.EliteScrolls
+		prof.Elixir += earnedRewards.Elixir
+		prof.Gold += earnedRewards.Gold
+		prof.HighestClearedStage = stageId
 
-			prof.Diamonds += earnedRewards.Diamonds
-			prof.Scrolls += earnedRewards.Scrolls
-			prof.Elixir += earnedRewards.Elixir
-			prof.Gold += earnedRewards.Gold
-			prof.HighestClearedStage = stageId
-
-			local nextStage = StageData.GetNextStageId(stageId)
-			if nextStage then
-				prof.CurrentStage = nextStage
-			end
-
-			if earnedRewards.Equipment then
-				table.insert(prof.EquipmentInventory, {
-					Uid = HttpService:GenerateGUID(false),
-					EquipmentId = earnedRewards.Equipment,
-					EnhanceLevel = 0,
-				})
-			end
-		else
-			-- Repeat farm rewards
-			earnedRewards.Gold = math.floor(stage.FirstClearRewards.Gold * 0.25)
-			earnedRewards.Elixir = math.floor(stage.FirstClearRewards.Elixir * 0.25)
-			prof.Gold += earnedRewards.Gold
-			prof.Elixir += earnedRewards.Elixir
+		local nextStage = StageData.GetNextStageId(stageId)
+		if nextStage then
+			prof.CurrentStage = nextStage
 		end
 
+		if earnedRewards.Equipment then
+			table.insert(prof.EquipmentInventory, {
+				Uid = HttpService:GenerateGUID(false),
+				EquipmentId = earnedRewards.Equipment,
+				EnhanceLevel = 0,
+			})
+		end
+
+		-- Record daily battle progress
+		ProfileService.RecordDailyProgress(player, "battle_3", 1)
 		ProfileService.SyncProfile(player)
 	end
 

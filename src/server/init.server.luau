@@ -101,10 +101,38 @@ remotes.UpdateFormation.OnServerEvent:Connect(function(player: Player, heroUids:
 	end
 end)
 
-remotes.RollGacha.OnServerEvent:Connect(function(player: Player, rollCount: unknown, paymentMethod: unknown)
-	if typeof(rollCount) == "number" and (paymentMethod == "Scrolls" or paymentMethod == "Diamonds") then
-		SummonService.RollGacha(player, rollCount, paymentMethod)
+remotes.RollGacha.OnServerEvent:Connect(function(player: Player, rollCount: unknown, summonType: unknown, paymentMethod: unknown)
+	if typeof(rollCount) == "number" then
+		local sType = (summonType == "Elite") and "Elite" or "Basic"
+		local pMethod = (typeof(paymentMethod) == "string") and paymentMethod or nil
+		SummonService.RollGacha(player, rollCount, sType, pMethod)
 	end
+end)
+
+remotes.ClaimMail.OnServerEvent:Connect(function(player: Player, mailId: unknown)
+	if typeof(mailId) == "string" then
+		ProfileService.ClaimMail(player, mailId)
+	end
+end)
+
+remotes.ClaimAllMails.OnServerEvent:Connect(function(player: Player)
+	ProfileService.ClaimAllMails(player)
+end)
+
+remotes.ClaimDailyMission.OnServerEvent:Connect(function(player: Player, missionId: unknown)
+	if typeof(missionId) == "string" then
+		ProfileService.ClaimDailyMission(player, missionId)
+	end
+end)
+
+remotes.ClaimDailyChest.OnServerEvent:Connect(function(player: Player, tier: unknown)
+	if typeof(tier) == "number" then
+		ProfileService.ClaimDailyChest(player, tier)
+	end
+end)
+
+remotes.PurchaseStarterPack.OnServerEvent:Connect(function(player: Player)
+	ProfileService.PurchaseStarterPack(player)
 end)
 
 remotes.FastAfkClaim.OnServerEvent:Connect(function(player)

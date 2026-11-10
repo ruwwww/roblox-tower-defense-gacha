@@ -12,8 +12,8 @@ local BattleSimulation = require(Shared:WaitForChild("Simulation"):WaitForChild(
 local LocalPlayer = Players.LocalPlayer
 local Camera = Workspace.CurrentCamera
 
-local ARENA_ORIGIN = Vector3.new(0, 300, 0)
-local TILE_SIZE = 10
+local ARENA_ORIGIN = Vector3.new(0, 100, 200)
+local TILE_SIZE = 8
 local GRID_W = 10
 local GRID_H = 8
 
@@ -33,7 +33,7 @@ end
 
 local function CreateDamagePopup(parentPart: Part, text: string, color: Color3)
 	local bb = Instance.new("BillboardGui")
-	bb.Size = UDim2.new(3, 0, 1.2, 0)
+	bb.Size = UDim2.new(3.5, 0, 1.4, 0)
 	bb.StudsOffset = Vector3.new(math.random(-1, 1), 3.5, math.random(-1, 1))
 	bb.AlwaysOnTop = true
 	bb.Parent = parentPart
@@ -47,11 +47,16 @@ local function CreateDamagePopup(parentPart: Part, text: string, color: Color3)
 	lbl.Text = text
 	lbl.Parent = bb
 
-	local tween = TweenService:Create(bb, TweenInfo.new(0.6, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-		StudsOffset = bb.StudsOffset + Vector3.new(0, 3, 0),
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Color3.fromRGB(0, 0, 0)
+	stroke.Thickness = 1.5
+	stroke.Parent = lbl
+
+	local tween = TweenService:Create(bb, TweenInfo.new(0.65, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+		StudsOffset = bb.StudsOffset + Vector3.new(0, 3.2, 0),
 	})
 	tween:Play()
-	task.delay(0.65, function()
+	task.delay(0.7, function()
 		if bb and bb.Parent then
 			bb:Destroy()
 		end
@@ -64,7 +69,7 @@ end
 
 function BattleArenaController.Start3DBattle(data: any, onComplete: () -> ())
 	if BattleArenaController.IsPlaying then
-		BattleArenaController.Stop()
+		return
 	end
 
 	BattleArenaController.IsPlaying = true
@@ -87,14 +92,14 @@ function BattleArenaController.Start3DBattle(data: any, onComplete: () -> ())
 
 	local tilesMap = stageDef.Tiles or {}
 
-	-- 1. Build Physical 3D Tile Board (2D Grid in 3D Workspace)
+	-- 1. Build Physical 3D Tile Board (Unmistakable Visual Differentiation)
 	local floorBase = Instance.new("Part")
 	floorBase.Name = "ArenaFloorBase"
-	floorBase.Size = Vector3.new(GRID_W * TILE_SIZE + 8, 2, GRID_H * TILE_SIZE + 8)
+	floorBase.Size = Vector3.new(GRID_W * TILE_SIZE + 10, 2, GRID_H * TILE_SIZE + 10)
 	floorBase.Position = ARENA_ORIGIN - Vector3.new(0, 1.5, 0)
 	floorBase.Anchored = true
 	floorBase.Material = Enum.Material.Concrete
-	floorBase.Color = Color3.fromRGB(22, 25, 32)
+	floorBase.Color = Color3.fromRGB(18, 20, 26)
 	floorBase.Parent = arena
 
 	for y = 1, GRID_H do
@@ -105,28 +110,64 @@ function BattleArenaController.Start3DBattle(data: any, onComplete: () -> ())
 			tilePart.Anchored = true
 
 			if tileType == "Path" then
-				tilePart.Size = Vector3.new(TILE_SIZE - 0.4, 0.8, TILE_SIZE - 0.4)
-				tilePart.Position = GridToWorld(x, y, 0.2)
-				tilePart.Material = Enum.Material.Slate
-				tilePart.Color = Color3.fromRGB(115, 95, 75)
+				-- Enemy Highway: Dark pavement with glowing orange guide stripe
+				tilePart.Size = Vector3.new(TILE_SIZE - 0.2, 0.6, TILE_SIZE - 0.2)
+				tilePart.Position = GridToWorld(x, y, 0.1)
+				tilePart.Material = Enum.Material.Pavement
+				tilePart.Color = Color3.fromRGB(36, 38, 48)
+
+				-- Center guide stripe
+				local stripe = Instance.new("Part")
+				stripe.Name = "PathStripe"
+				stripe.Size = Vector3.new(TILE_SIZE * 0.45, 0.64, TILE_SIZE * 0.45)
+				stripe.Position = GridToWorld(x, y, 0.12)
+				stripe.Anchored = true
+				stripe.CanCollide = false
+				stripe.Material = Enum.Material.Neon
+				stripe.Color = Color3.fromRGB(240, 95, 30)
+				stripe.Transparency = 0.45
+				stripe.Parent = arena
+
 			elseif tileType == "HighGround" then
-				tilePart.Size = Vector3.new(TILE_SIZE - 0.4, 4.5, TILE_SIZE - 0.4)
-				tilePart.Position = GridToWorld(x, y, 2.25)
+				-- Tower: 3.8-stud high stone tower with cyan rune top
+				tilePart.Size = Vector3.new(TILE_SIZE - 0.4, 3.8, TILE_SIZE - 0.4)
+				tilePart.Position = GridToWorld(x, y, 1.9)
 				tilePart.Material = Enum.Material.Cobblestone
-				tilePart.Color = Color3.fromRGB(55, 60, 75)
+				tilePart.Color = Color3.fromRGB(48, 55, 70)
+
+				local runeCap = Instance.new("Part")
+				runeCap.Name = "TowerCap"
+				runeCap.Size = Vector3.new(TILE_SIZE - 1.2, 0.2, TILE_SIZE - 1.2)
+				runeCap.Position = GridToWorld(x, y, 3.85)
+				runeCap.Anchored = true
+				runeCap.CanCollide = false
+				runeCap.Material = Enum.Material.Neon
+				runeCap.Color = Color3.fromRGB(0, 190, 255)
+				runeCap.Transparency = 0.35
+				runeCap.Parent = arena
+
+			elseif tileType == "Obstacle" then
+				-- Crag / Boulder
+				tilePart.Size = Vector3.new(TILE_SIZE - 0.5, 3.0, TILE_SIZE - 0.5)
+				tilePart.Position = GridToWorld(x, y, 1.5)
+				tilePart.Material = Enum.Material.Slate
+				tilePart.Color = Color3.fromRGB(65, 68, 75)
+
 			else
-				tilePart.Size = Vector3.new(TILE_SIZE - 0.4, 1.2, TILE_SIZE - 0.4)
-				tilePart.Position = GridToWorld(x, y, 0.4)
+				-- Lush green meadow terrain (Ground Deployable for Melee)
+				tilePart.Size = Vector3.new(TILE_SIZE - 0.3, 1.0, TILE_SIZE - 0.3)
+				tilePart.Position = GridToWorld(x, y, 0.3)
 				tilePart.Material = Enum.Material.Grass
-				tilePart.Color = Color3.fromRGB(45, 95, 50)
+				tilePart.Color = Color3.fromRGB(40, 105, 48)
 			end
 
 			tilePart.Parent = arena
 		end
 	end
 
-	-- Spawn Portal (1, 4)
-	local spawnPos = GridToWorld(1, 4, 1.0)
+	-- Spawn Portal (1st waypoint)
+	local startWp = (stageDef.PathCoords and stageDef.PathCoords[1]) or Vector2.new(1, 4)
+	local spawnPos = GridToWorld(startWp.X, startWp.Y, 1.0)
 	local spawnGate = Instance.new("Part")
 	spawnGate.Name = "EnemySpawnPortal"
 	spawnGate.Size = Vector3.new(4, 7, 4)
@@ -138,8 +179,9 @@ function BattleArenaController.Start3DBattle(data: any, onComplete: () -> ())
 	spawnGate.Transparency = 0.25
 	spawnGate.Parent = arena
 
-	-- Base Crystal (10, 4)
-	local crystalPos = GridToWorld(10, 4, 1.0)
+	-- Base Crystal (Last waypoint)
+	local endWp = (stageDef.PathCoords and stageDef.PathCoords[#stageDef.PathCoords]) or Vector2.new(10, 4)
+	local crystalPos = GridToWorld(endWp.X, endWp.Y, 1.0)
 	local crystalBase = Instance.new("Part")
 	crystalBase.Name = "BaseCrystal"
 	crystalBase.Size = Vector3.new(3.5, 6.5, 3.5)
@@ -168,10 +210,10 @@ function BattleArenaController.Start3DBattle(data: any, onComplete: () -> ())
 	battleGui.Parent = playerGui
 
 	local headerBar = Instance.new("Frame")
-	headerBar.Size = UDim2.new(0.6, 0, 0, 50)
-	headerBar.Position = UDim2.new(0.2, 0, 0, 15)
+	headerBar.Size = UDim2.new(0.65, 0, 0, 52)
+	headerBar.Position = UDim2.new(0.175, 0, 0, 15)
 	headerBar.BackgroundColor3 = Color3.fromRGB(20, 24, 34)
-	headerBar.BackgroundTransparency = 0.2
+	headerBar.BackgroundTransparency = 0.15
 	headerBar.Parent = battleGui
 
 	local hCorner = Instance.new("UICorner")
@@ -184,8 +226,8 @@ function BattleArenaController.Start3DBattle(data: any, onComplete: () -> ())
 	hStroke.Parent = headerBar
 
 	local titleLbl = Instance.new("TextLabel")
-	titleLbl.Size = UDim2.new(0.6, 0, 1, 0)
-	titleLbl.Position = UDim2.new(0.04, 0, 0, 0)
+	titleLbl.Size = UDim2.new(0.62, 0, 1, 0)
+	titleLbl.Position = UDim2.new(0.03, 0, 0, 0)
 	titleLbl.BackgroundTransparency = 1
 	titleLbl.TextColor3 = Color3.fromRGB(255, 230, 90)
 	titleLbl.TextScaled = true
@@ -196,7 +238,7 @@ function BattleArenaController.Start3DBattle(data: any, onComplete: () -> ())
 
 	local crystalHpLbl = Instance.new("TextLabel")
 	crystalHpLbl.Size = UDim2.new(0.32, 0, 1, 0)
-	crystalHpLbl.Position = UDim2.new(0.64, 0, 0, 0)
+	crystalHpLbl.Position = UDim2.new(0.65, 0, 0, 0)
 	crystalHpLbl.BackgroundTransparency = 1
 	crystalHpLbl.TextColor3 = Color3.fromRGB(100, 230, 255)
 	crystalHpLbl.TextScaled = true
@@ -204,33 +246,60 @@ function BattleArenaController.Start3DBattle(data: any, onComplete: () -> ())
 	crystalHpLbl.Text = "💎 Crystal: 100/100"
 	crystalHpLbl.Parent = headerBar
 
+	-- Bottom Right Action Panel (Speed, Skip, Exit)
 	local ctrlPanel = Instance.new("Frame")
-	ctrlPanel.Size = UDim2.new(0, 240, 0, 50)
-	ctrlPanel.Position = UDim2.new(1, -260, 1, -70)
+	ctrlPanel.Size = UDim2.new(0, 360, 0, 50)
+	ctrlPanel.Position = UDim2.new(1, -380, 1, -70)
 	ctrlPanel.BackgroundTransparency = 1
 	ctrlPanel.Parent = battleGui
 
+	local ctrlLayout = Instance.new("UIListLayout")
+	ctrlLayout.FillDirection = Enum.FillDirection.Horizontal
+	ctrlLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right
+	ctrlLayout.Padding = UDim.new(0, 10)
+	ctrlLayout.Parent = ctrlPanel
+
+	-- Exit Battle Button
+	local exitBtn = Instance.new("TextButton")
+	exitBtn.Size = UDim2.new(0, 105, 0, 44)
+	exitBtn.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+	exitBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	exitBtn.TextScaled = true
+	exitBtn.Font = Enum.Font.GothamBold
+	exitBtn.Text = "🚪 EXIT"
+	exitBtn.Parent = ctrlPanel
+
+	local exCorner = Instance.new("UICorner")
+	exCorner.CornerRadius = UDim.new(0, 8)
+	exCorner.Parent = exitBtn
+
+	-- Speed Up Button (Milestone: Chapter 2-10)
+	local highestStage = data.HighestClearedStage or "1-0"
+	local isSpeedUnlocked = StageData.IsMilestoneReached(highestStage, "2-10")
+
 	local speedBtn = Instance.new("TextButton")
-	speedBtn.Size = UDim2.new(0, 105, 0, 44)
-	speedBtn.BackgroundColor3 = Color3.fromRGB(35, 45, 65)
-	speedBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	speedBtn.Size = UDim2.new(0, 115, 0, 44)
+	speedBtn.BackgroundColor3 = isSpeedUnlocked and Color3.fromRGB(35, 45, 65) or Color3.fromRGB(50, 50, 60)
+	speedBtn.TextColor3 = isSpeedUnlocked and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(160, 160, 170)
 	speedBtn.TextScaled = true
 	speedBtn.Font = Enum.Font.GothamBold
-	speedBtn.Text = "▶ Speed: 1x"
+	speedBtn.Text = isSpeedUnlocked and "▶ Speed: 1x" or "🔒 2x (2-10)"
 	speedBtn.Parent = ctrlPanel
 
 	local sCorner = Instance.new("UICorner")
 	sCorner.CornerRadius = UDim.new(0, 8)
 	sCorner.Parent = speedBtn
 
+	-- Skip Button (Milestone: Chapter 5-10)
+	local isSkipUnlocked = StageData.IsMilestoneReached(highestStage, "5-10")
+
 	local skipBtn = Instance.new("TextButton")
-	skipBtn.Size = UDim2.new(0, 115, 0, 44)
-	skipBtn.Position = UDim2.new(0, 120, 0, 0)
-	skipBtn.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
-	skipBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	skipBtn.Size = UDim2.new(0, 110, 0, 44)
+	skipBtn.BackgroundColor3 = isSkipUnlocked and Color3.fromRGB(220, 150, 40) or Color3.fromRGB(50, 50, 60)
+	skipBtn.TextColor3 = isSkipUnlocked and Color3.fromRGB(255, 255, 255) or Color3.fromRGB(160, 160, 170)
 	skipBtn.TextScaled = true
 	skipBtn.Font = Enum.Font.GothamBlack
-	skipBtn.Text = "⚡ SKIP"
+	skipBtn.Text = isSkipUnlocked and "⚡ SKIP" or "🔒 Skip (5-10)"
 	skipBtn.Parent = ctrlPanel
 
 	local skCorner = Instance.new("UICorner")
@@ -238,6 +307,11 @@ function BattleArenaController.Start3DBattle(data: any, onComplete: () -> ())
 	skCorner.Parent = skipBtn
 
 	speedBtn.MouseButton1Click:Connect(function()
+		if not isSpeedUnlocked then
+			CreateDamagePopup(floorBase, "Speed 2x unlocks after Stage 2-10!", Color3.fromRGB(255, 200, 60))
+			return
+		end
+
 		if BattleArenaController.Speed == 1 then
 			BattleArenaController.Speed = 2
 			speedBtn.Text = "⏩ Speed: 2x"
@@ -254,7 +328,7 @@ function BattleArenaController.Start3DBattle(data: any, onComplete: () -> ())
 	end)
 
 	local isFinished = false
-	local function FinishBattle()
+	local function FinishBattle(isManualExit: boolean?)
 		if isFinished then return end
 		isFinished = true
 		BattleArenaController.IsPlaying = false
@@ -268,11 +342,25 @@ function BattleArenaController.Start3DBattle(data: any, onComplete: () -> ())
 		Camera.CameraType = prevCameraType
 		Camera.CFrame = prevCameraCFrame
 
-		onComplete()
+		if not isManualExit then
+			onComplete()
+		else
+			-- Manual Exit: return directly to lobby
+			local UIController = require(script.Parent:WaitForChild("UIController"))
+			UIController.SetLobbyVisible(true)
+		end
 	end
 
+	exitBtn.MouseButton1Click:Connect(function()
+		FinishBattle(true)
+	end)
+
 	skipBtn.MouseButton1Click:Connect(function()
-		FinishBattle()
+		if not isSkipUnlocked then
+			CreateDamagePopup(floorBase, "Skip Autobattle unlocks after Stage 5-10!", Color3.fromRGB(255, 200, 60))
+			return
+		end
+		FinishBattle(false)
 	end)
 
 	-- 4. Deploy 3D Hero Tokens on Tiles from Formation
@@ -288,7 +376,7 @@ function BattleArenaController.Start3DBattle(data: any, onComplete: () -> ())
 		for _, heroUnit in ipairs(data.Formation) do
 			local gx = (heroUnit.GridPos and heroUnit.GridPos.X) or heroUnit.GridX or 5
 			local gy = (heroUnit.GridPos and heroUnit.GridPos.Y) or heroUnit.GridY or 4
-			local hY = (heroUnit.PlacementType == "Ground") and 2.0 or 5.5
+			local hY = (heroUnit.PlacementType == "Ground") and 2.0 or 5.2
 			local hPos = GridToWorld(gx, gy, hY)
 
 			local heroPart = Instance.new("Part")
@@ -322,134 +410,144 @@ function BattleArenaController.Start3DBattle(data: any, onComplete: () -> ())
 			nameLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
 			nameLbl.TextScaled = true
 			nameLbl.Font = Enum.Font.GothamBold
-			nameLbl.Text = roleIcon .. " " .. (def and def.Name or heroUnit.HeroId)
+			nameLbl.Text = string.format("%s %s", roleIcon, def and def.Name or heroUnit.HeroId)
 			nameLbl.Parent = bb
 
-			local hpBarBack = Instance.new("Frame")
-			hpBarBack.Size = UDim2.new(0.85, 0, 0.22, 0)
-			hpBarBack.Position = UDim2.new(0.075, 0, 0.6, 0)
-			hpBarBack.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-			hpBarBack.BorderSizePixel = 0
-			hpBarBack.Parent = bb
+			local hpBg = Instance.new("Frame")
+			hpBg.Size = UDim2.new(0.9, 0, 0.28, 0)
+			hpBg.Position = UDim2.new(0.05, 0, 0.58, 0)
+			hpBg.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+			hpBg.BorderSizePixel = 0
+			hpBg.Parent = bb
 
-			local hpBarFill = Instance.new("Frame")
-			hpBarFill.Size = UDim2.new(1, 0, 1, 0)
-			hpBarFill.BackgroundColor3 = Color3.fromRGB(60, 220, 80)
-			hpBarFill.BorderSizePixel = 0
-			hpBarFill.Parent = hpBarBack
+			local hpFill = Instance.new("Frame")
+			hpFill.Size = UDim2.new(1, 0, 1, 0)
+			hpFill.BackgroundColor3 = Color3.fromRGB(50, 220, 80)
+			hpFill.BorderSizePixel = 0
+			hpFill.Parent = hpBg
 
-			local maxHp = (def and def.BaseHp) or 1000
 			heroVisuals[heroUnit.HeroUid] = {
 				Part = heroPart,
-				HpFill = hpBarFill,
+				HpFill = hpFill,
 				Role = heroUnit.Role,
-				MaxHp = maxHp,
+				MaxHp = def and def.BaseHp or 1000,
 			}
 		end
 	end
 
-	-- 5. Create Deterministic Client Simulation Session (100% Matching Ground-Truth!)
-	-- Retrieve heroes inventory from UIController
-	local UIController = require(script.Parent:WaitForChild("UIController"))
-	local heroInventory = UIController.State.Heroes or {}
+	-- 5. Start Deterministic Simulation Session
+	local heroInstancesMap = {}
+	if data.HeroInstances then
+		heroInstancesMap = data.HeroInstances
+	else
+		for _, h in ipairs(data.Formation or {}) do
+			heroInstancesMap[h.HeroUid] = {
+				Uid = h.HeroUid,
+				HeroId = h.HeroId,
+				Level = 1,
+				Star = 3,
+			}
+		end
+	end
 
-	local session = BattleSimulation.CreateSession(stageDef, data.Formation, heroInventory)
+	local session = BattleSimulation.CreateSession(stageDef, data.Formation, heroInstancesMap)
 
+	-- Active Visual Models for Enemies
 	type EnemyVisual = {
 		Part: Part,
 		HpFill: Frame,
 		MaxHp: number,
+		CurHp: number,
 	}
 	local enemyVisuals: { [string]: EnemyVisual } = {}
 
-	-- 6. Execute Deterministic Simulation Tick-by-Tick to drive 3D Visual Playback
 	task.spawn(function()
 		while BattleArenaController.IsPlaying and not session:IsFinished() do
-			local dt = 0.1
-			local stepEvents = session:Step(dt)
+			local events = session:Step(0.1)
 
-			for _, ev in ipairs(stepEvents) do
+			for _, ev in ipairs(events) do
 				if ev.Type == "EnemySpawned" then
-					local enemyPart = Instance.new("Part")
-					enemyPart.Name = ev.EnemyId
-					enemyPart.Anchored = true
-					enemyPart.CanCollide = false
+					local ePart = Instance.new("Part")
+					ePart.Name = "Enemy_" .. ev.EnemyId
+					ePart.Position = GridToWorld(ev.GridPos.X, ev.GridPos.Y, 2.0)
+					ePart.Anchored = true
+					ePart.CanCollide = false
 
-					if ev.IsBoss or ev.Archetype == "boss" then
-						enemyPart.Size = Vector3.new(4.5, 6.0, 4.5)
-						enemyPart.Material = Enum.Material.Neon
-						enemyPart.Color = Color3.fromRGB(180, 20, 40)
-					elseif ev.Archetype == "golem" then
-						enemyPart.Size = Vector3.new(3.8, 4.6, 3.8)
-						enemyPart.Material = Enum.Material.Cobblestone
-						enemyPart.Color = Color3.fromRGB(110, 80, 60)
-					elseif ev.Archetype == "tank" then
-						enemyPart.Size = Vector3.new(3.2, 4.0, 3.2)
-						enemyPart.Material = Enum.Material.Slate
-						enemyPart.Color = Color3.fromRGB(90, 45, 45)
+					if ev.IsBoss then
+						ePart.Size = Vector3.new(4.5, 6.0, 4.5)
+						ePart.Material = Enum.Material.Neon
+						ePart.Color = Color3.fromRGB(180, 20, 20)
+
+						local crown = Instance.new("Part")
+						crown.Name = "BossCrown"
+						crown.Size = Vector3.new(3, 1.2, 3)
+						crown.Position = ePart.Position + Vector3.new(0, 3.8, 0)
+						crown.Material = Enum.Material.Neon
+						crown.Color = Color3.fromRGB(255, 215, 0)
+						crown.Anchored = true
+						crown.CanCollide = false
+						crown.Parent = ePart
 					elseif ev.Archetype == "runner" then
-						enemyPart.Size = Vector3.new(2.0, 2.8, 2.0)
-						enemyPart.Material = Enum.Material.Neon
-						enemyPart.Color = Color3.fromRGB(255, 120, 30)
+						ePart.Size = Vector3.new(2.2, 3.0, 2.2)
+						ePart.Material = Enum.Material.SmoothPlastic
+						ePart.Color = Color3.fromRGB(230, 110, 30)
+					elseif ev.Archetype == "tank" then
+						ePart.Size = Vector3.new(3.5, 4.8, 3.5)
+						ePart.Material = Enum.Material.DiamondPlate
+						ePart.Color = Color3.fromRGB(60, 65, 75)
+					elseif ev.Archetype == "golem" then
+						ePart.Size = Vector3.new(4.0, 5.5, 4.0)
+						ePart.Material = Enum.Material.Cobblestone
+						ePart.Color = Color3.fromRGB(100, 95, 90)
 					else
-						enemyPart.Size = Vector3.new(2.4, 3.2, 2.4)
-						enemyPart.Material = Enum.Material.SmoothPlastic
-						enemyPart.Color = Color3.fromRGB(220, 50, 40)
+						ePart.Size = Vector3.new(2.5, 3.5, 2.5)
+						ePart.Material = Enum.Material.SmoothPlastic
+						ePart.Color = Color3.fromRGB(160, 40, 40)
 					end
+					ePart.Parent = arena
 
-					enemyPart.Position = GridToWorld(ev.GridPos.X, ev.GridPos.Y, enemyPart.Size.Y / 2)
-					enemyPart.Parent = arena
+					local ebb = Instance.new("BillboardGui")
+					ebb.Size = UDim2.new(3.5, 0, 1.8, 0)
+					ebb.StudsOffset = Vector3.new(0, ePart.Size.Y / 2 + 1.2, 0)
+					ebb.AlwaysOnTop = true
+					ebb.Parent = ePart
 
-					-- Enemy Overhead Billboard
-					local bb = Instance.new("BillboardGui")
-					bb.Size = UDim2.new(3.5, 0, 1.8, 0)
-					bb.StudsOffset = Vector3.new(0, enemyPart.Size.Y / 2 + 1.6, 0)
-					bb.AlwaysOnTop = true
-					bb.Parent = enemyPart
+					local ehpBg = Instance.new("Frame")
+					ehpBg.Size = UDim2.new(0.9, 0, 0.35, 0)
+					ehpBg.Position = UDim2.new(0.05, 0, 0.4, 0)
+					ehpBg.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+					ehpBg.BorderSizePixel = 0
+					ehpBg.Parent = ebb
 
-					local nameLbl = Instance.new("TextLabel")
-					nameLbl.Size = UDim2.new(1, 0, 0.5, 0)
-					nameLbl.BackgroundTransparency = 1
-					nameLbl.TextColor3 = (ev.IsBoss or ev.Archetype == "boss") and Color3.fromRGB(255, 215, 60) or Color3.fromRGB(255, 180, 180)
-					nameLbl.TextScaled = true
-					nameLbl.Font = Enum.Font.GothamBold
-					nameLbl.Text = (ev.IsBoss or ev.Archetype == "boss") and ("👑 " .. string.upper(ev.Archetype)) or string.upper(ev.Archetype)
-					nameLbl.Parent = bb
-
-					local hpBack = Instance.new("Frame")
-					hpBack.Size = UDim2.new(0.85, 0, 0.25, 0)
-					hpBack.Position = UDim2.new(0.075, 0, 0.55, 0)
-					hpBack.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-					hpBack.BorderSizePixel = 0
-					hpBack.Parent = bb
-
-					local hpFill = Instance.new("Frame")
-					hpFill.Size = UDim2.new(1, 0, 1, 0)
-					hpFill.BackgroundColor3 = Color3.fromRGB(240, 50, 60)
-					hpFill.BorderSizePixel = 0
-					hpFill.Parent = hpBack
+					local ehpFill = Instance.new("Frame")
+					ehpFill.Size = UDim2.new(1, 0, 1, 0)
+					ehpFill.BackgroundColor3 = Color3.fromRGB(230, 40, 40)
+					ehpFill.BorderSizePixel = 0
+					ehpFill.Parent = ehpBg
 
 					enemyVisuals[ev.EnemyId] = {
-						Part = enemyPart,
-						HpFill = hpFill,
+						Part = ePart,
+						HpFill = ehpFill,
 						MaxHp = ev.MaxHp,
+						CurHp = ev.Hp,
 					}
 
 				elseif ev.Type == "EnemyMoved" then
 					local evis = enemyVisuals[ev.EnemyId]
 					if evis and evis.Part and evis.Part.Parent then
-						local targetPos = GridToWorld(ev.GridPos.X, ev.GridPos.Y, evis.Part.Size.Y / 2)
-						local tweenTime = (0.1 / BattleArenaController.Speed)
-						local tween = TweenService:Create(evis.Part, TweenInfo.new(tweenTime, Enum.EasingStyle.Linear), {
-							Position = targetPos,
-						})
-						tween:Play()
+						local targetPos = GridToWorld(ev.GridPos.X, ev.GridPos.Y, evis.Part.Size.Y / 2 + 0.5)
+						evis.Part.Position = targetPos
+						local crown = evis.Part:FindFirstChild("BossCrown") :: Part?
+						if crown then
+							crown.Position = targetPos + Vector3.new(0, evis.Part.Size.Y / 2 + 0.8, 0)
+						end
 					end
 
 				elseif ev.Type == "EnemyBlocked" then
 					local evis = enemyVisuals[ev.EnemyId]
-					if evis and evis.Part and evis.Part.Parent then
-						CreateDamagePopup(evis.Part, "🛑 BLOCKED!", Color3.fromRGB(255, 220, 60))
+					local hvis = heroVisuals[ev.BlockerUid]
+					if evis and hvis and evis.Part and hvis.Part then
+						CreateDamagePopup(evis.Part, "⛔ ENGAGED", Color3.fromRGB(255, 200, 50))
 					end
 
 				elseif ev.Type == "EnemyAttackedBlocker" then
@@ -457,35 +555,32 @@ function BattleArenaController.Start3DBattle(data: any, onComplete: () -> ())
 					if hvis and hvis.Part and hvis.Part.Parent then
 						local pct = math.clamp(ev.BlockerRemainingHp / ev.BlockerMaxHp, 0, 1)
 						hvis.HpFill.Size = UDim2.new(pct, 0, 1, 0)
-						CreateDamagePopup(hvis.Part, "-" .. tostring(math.floor(ev.Damage)), Color3.fromRGB(255, 70, 70))
+						CreateDamagePopup(hvis.Part, "-" .. tostring(math.floor(ev.Damage)), Color3.fromRGB(255, 60, 60))
 					end
 
 				elseif ev.Type == "HeroAttackedEnemy" then
 					local evis = enemyVisuals[ev.EnemyId]
 					local hvis = heroVisuals[ev.HeroUid]
-
 					if evis and evis.Part and evis.Part.Parent then
 						local pct = math.clamp(ev.EnemyRemainingHp / ev.EnemyMaxHp, 0, 1)
 						evis.HpFill.Size = UDim2.new(pct, 0, 1, 0)
 
-						local popupText = "-" .. tostring(math.floor(ev.Damage))
-						local popupColor = Color3.fromRGB(255, 255, 255)
+						local dmgText = tostring(math.floor(ev.Damage))
+						local dmgColor = Color3.fromRGB(255, 230, 80)
 						if ev.IsUltimate then
-							popupText = "💥 ULTIMATE! -" .. tostring(math.floor(ev.Damage))
-							popupColor = Color3.fromRGB(255, 220, 30)
+							dmgText = "💥 " .. dmgText .. " (ULTIMATE!)"
+							dmgColor = Color3.fromRGB(255, 60, 220)
 						end
-						CreateDamagePopup(evis.Part, popupText, popupColor)
+						CreateDamagePopup(evis.Part, dmgText, dmgColor)
 
-						-- Visual Beam from Hero to Enemy
-						if hvis and hvis.Part and hvis.Part.Parent then
+						if hvis and (hvis.Role == "Sniper" or hvis.Role == "Caster") then
 							local beam = Instance.new("Part")
-							local dist = (hvis.Part.Position - evis.Part.Position).Magnitude
-							beam.Size = Vector3.new(0.4, 0.4, dist)
+							beam.Size = Vector3.new(0.4, 0.4, (hvis.Part.Position - evis.Part.Position).Magnitude)
 							beam.CFrame = CFrame.lookAt((hvis.Part.Position + evis.Part.Position) / 2, evis.Part.Position)
-							beam.Material = Enum.Material.Neon
-							beam.Color = ev.IsUltimate and Color3.fromRGB(255, 220, 50) or (hvis.Role == "Caster" and Color3.fromRGB(255, 100, 40) or Color3.fromRGB(255, 255, 120))
 							beam.Anchored = true
 							beam.CanCollide = false
+							beam.Material = Enum.Material.Neon
+							beam.Color = (hvis.Role == "Caster") and Color3.fromRGB(255, 100, 50) or Color3.fromRGB(100, 200, 255)
 							beam.Parent = arena
 
 							task.delay(0.12 / BattleArenaController.Speed, function()
@@ -499,22 +594,20 @@ function BattleArenaController.Start3DBattle(data: any, onComplete: () -> ())
 				elseif ev.Type == "MedicHealedHero" then
 					local targetVis = heroVisuals[ev.TargetUid]
 					local medicVis = heroVisuals[ev.MedicUid]
-
 					if targetVis and targetVis.Part and targetVis.Part.Parent then
-						local pct = math.clamp(ev.TargetRemainingHp / ev.TargetMaxHp, 0, 1)
+						local pct = math.clamp(ev.TargetRemainingHp / targetVis.MaxHp, 0, 1)
 						targetVis.HpFill.Size = UDim2.new(pct, 0, 1, 0)
-						CreateDamagePopup(targetVis.Part, "+" .. tostring(math.floor(ev.Amount)) .. " 💚", Color3.fromRGB(80, 255, 120))
+						CreateDamagePopup(targetVis.Part, "+" .. tostring(math.floor(ev.HealAmount)) .. " HP", Color3.fromRGB(80, 255, 120))
 
-						-- Green healing ring from Medic to Target
-						if medicVis and medicVis.Part and medicVis.Part.Parent then
+						if medicVis and medicVis.Part then
 							local healBeam = Instance.new("Part")
-							local dist = (medicVis.Part.Position - targetVis.Part.Position).Magnitude
-							healBeam.Size = Vector3.new(0.5, 0.5, dist)
+							healBeam.Size = Vector3.new(0.5, 0.5, (medicVis.Part.Position - targetVis.Part.Position).Magnitude)
 							healBeam.CFrame = CFrame.lookAt((medicVis.Part.Position + targetVis.Part.Position) / 2, targetVis.Part.Position)
-							healBeam.Material = Enum.Material.Neon
-							healBeam.Color = Color3.fromRGB(60, 240, 100)
 							healBeam.Anchored = true
 							healBeam.CanCollide = false
+							healBeam.Material = Enum.Material.Neon
+							healBeam.Color = Color3.fromRGB(60, 255, 140)
+							healBeam.Transparency = 0.25
 							healBeam.Parent = arena
 
 							task.delay(0.18 / BattleArenaController.Speed, function()
@@ -560,7 +653,7 @@ function BattleArenaController.Start3DBattle(data: any, onComplete: () -> ())
 		end
 
 		task.wait(1.0 / BattleArenaController.Speed)
-		FinishBattle()
+		FinishBattle(false)
 	end)
 end
 

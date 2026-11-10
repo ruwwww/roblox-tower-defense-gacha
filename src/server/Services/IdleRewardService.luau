@@ -107,6 +107,7 @@ function IdleRewardService.ClaimAfkLoot(player: Player)
 		})
 	end
 
+	ProfileService.RecordDailyProgress(player, "claim_afk_1", 1)
 	ProfileService.SyncProfile(player)
 
 	if IdleRewardService.Remotes.NotifyMessage then

@@ -9,11 +9,8 @@ local HeroData = require(Shared:WaitForChild("Data"):WaitForChild("HeroData"))
 local ProfileService = require(script.Parent:WaitForChild("ProfileService"))
 
 type HeroDefinition = HeroData.HeroDefinition
-type PaymentMethod = "Scrolls" | "Diamonds"
-type RarityRate = {
-	Star: number,
-	Rate: number,
-}
+type SummonType = "Basic" | "Elite"
+type PaymentMethod = "Scrolls" | "Diamonds" | "Free"
 
 export type SummonResult = {
 	Uid: string,
@@ -23,18 +20,30 @@ export type SummonResult = {
 	Role: HeroData.HeroRole,
 }
 
-local RARITY_RATES: { RarityRate } = {
-	{ Star = 5, Rate = 0.04 },
-	{ Star = 4, Rate = 0.20 },
-	{ Star = 3, Rate = 0.76 },
+local BASIC_RATES = {
+	{ Star = 4, Rate = 0.03 },
+	{ Star = 3, Rate = 0.12 },
+	{ Star = 2, Rate = 0.35 },
+	{ Star = 1, Rate = 0.50 },
 }
 
-local DIAMOND_COSTS: { [number]: number } = {
-	[1] = 200,
-	[10] = 1800,
+local ELITE_RATES = {
+	{ Star = 5, Rate = 0.05 },
+	{ Star = 4, Rate = 0.25 },
+	{ Star = 3, Rate = 0.70 },
 }
 
-local REQUEST_COOLDOWN = 0.5
+local BASIC_DIAMOND_COSTS: { [number]: number } = {
+	[1] = 50,
+	[10] = 450,
+}
+
+local ELITE_DIAMOND_COSTS: { [number]: number } = {
+	[1] = 220,
+	[10] = 2000,
+}
+
+local REQUEST_COOLDOWN = 0.3
 local RNG = Random.new()
 
 local HeroPools: { [number]: { HeroDefinition } } = {}
@@ -59,37 +68,38 @@ local SummonService = {
 }
 
 local function GetPoolForStar(star: number): { HeroDefinition }?
-	local exactPool = HeroPools[star]
-	if exactPool and #exactPool > 0 then
-		return exactPool
+	local pool = HeroPools[star]
+	if pool and #pool > 0 then
+		return pool
 	end
 
-	-- If a rarity has no exact HeroData tier, use the nearest lower base tier
-	-- and award the instance at the rolled star. HeroData currently has no 4★ tier.
-	local nearestLowerStar = -math.huge
-	local nearestLowerPool: { HeroDefinition }? = nil
-	for baseStar, pool in pairs(HeroPools) do
-		if baseStar < star and baseStar > nearestLowerStar and #pool > 0 then
-			nearestLowerStar = baseStar
-			nearestLowerPool = pool
+	-- Fallback to closest available star
+	for s = star - 1, 1, -1 do
+		if HeroPools[s] and #HeroPools[s] > 0 then
+			return HeroPools[s]
 		end
 	end
-
-	return nearestLowerPool
+	for s = star + 1, 5 do
+		if HeroPools[s] and #HeroPools[s] > 0 then
+			return HeroPools[s]
+		end
+	end
+	return nil
 end
 
-local function RollStar(): number
+local function RollStar(summonType: SummonType): number
+	local rates = (summonType == "Elite") and ELITE_RATES or BASIC_RATES
 	local roll = RNG:NextNumber()
 	local cumulativeRate = 0
 
-	for _, entry in ipairs(RARITY_RATES) do
+	for _, entry in ipairs(rates) do
 		cumulativeRate += entry.Rate
 		if roll < cumulativeRate then
 			return entry.Star
 		end
 	end
 
-	return 3
+	return (summonType == "Elite") and 3 or 1
 end
 
 local function Notify(player: Player, message: string, color: Color3)
@@ -107,12 +117,20 @@ function SummonService.Init(remotes: { [string]: RemoteEvent })
 	end)
 end
 
-function SummonService.RollGacha(player: Player, rollCount: number, paymentMethod: PaymentMethod)
+function SummonService.IsDailyFreeAvailable(profile: ProfileService.PlayerProfile): boolean
+	if profile.LastFreeBasicSummon == 0 then
+		return true
+	end
+	-- 24 hours cooldown or calendar day reset
+	return (os.time() - profile.LastFreeBasicSummon) >= 86400
+end
+
+function SummonService.RollGacha(player: Player, rollCount: number, summonType: SummonType, preferredPayment: string?)
 	if rollCount ~= 1 and rollCount ~= 10 then
 		return
 	end
-	if paymentMethod ~= "Scrolls" and paymentMethod ~= "Diamonds" then
-		return
+	if summonType ~= "Basic" and summonType ~= "Elite" then
+		summonType = "Basic"
 	end
 
 	local now = os.clock()
@@ -127,71 +145,77 @@ function SummonService.RollGacha(player: Player, rollCount: number, paymentMetho
 		return
 	end
 
-	local diamondCost = DIAMOND_COSTS[rollCount]
-	if not diamondCost then
-		return
+	-- Check 1x Free Basic Summon
+	local isFreeSummon = false
+	if summonType == "Basic" and rollCount == 1 and SummonService.IsDailyFreeAvailable(profile) then
+		isFreeSummon = true
 	end
 
-	if paymentMethod == "Scrolls" then
-		if profile.Scrolls < rollCount then
-			Notify(player, "Not enough Summon Scrolls.", Color3.fromRGB(255, 80, 80))
-			return
+	if not isFreeSummon then
+		if summonType == "Basic" then
+			if profile.BasicScrolls >= rollCount then
+				profile.BasicScrolls -= rollCount
+			else
+				local cost = BASIC_DIAMOND_COSTS[rollCount] or 50
+				if profile.Diamonds < cost then
+					Notify(player, string.format("Not enough Basic Scrolls or Diamonds! Need %d 💎", cost), Color3.fromRGB(255, 80, 80))
+					return
+				end
+				profile.Diamonds -= cost
+			end
+		else
+			-- Elite Summon
+			if profile.EliteScrolls >= rollCount then
+				profile.EliteScrolls -= rollCount
+			else
+				local cost = ELITE_DIAMOND_COSTS[rollCount] or 220
+				if profile.Diamonds < cost then
+					Notify(player, string.format("Not enough Elite Scrolls or Diamonds! Need %d 💎", cost), Color3.fromRGB(255, 80, 80))
+					return
+				end
+				profile.Diamonds -= cost
+			end
 		end
 	else
-		if profile.Diamonds < diamondCost then
-			Notify(player, "Not enough Diamonds.", Color3.fromRGB(255, 80, 80))
-			return
-		end
+		profile.LastFreeBasicSummon = os.time()
 	end
 
-	for _, entry in ipairs(RARITY_RATES) do
-		if not GetPoolForStar(entry.Star) then
-			warn(string.format("[SummonService] No hero pool available for %d★ summons.", entry.Star))
-			Notify(player, "Summoning is temporarily unavailable.", Color3.fromRGB(255, 80, 80))
-			return
-		end
-	end
-
-	-- Charge once before rolling; this handler does not yield between validation and debit.
-	if paymentMethod == "Scrolls" then
-		profile.Scrolls -= rollCount
-	else
-		profile.Diamonds -= diamondCost
-	end
-
+	-- Execute Rolls
 	local results: { SummonResult } = {}
 	for _ = 1, rollCount do
-		local star = RollStar()
-		local pool = GetPoolForStar(star)
-		if not pool then
-			-- Catalogs are validated above, so this is only a defensive guard.
-			warn(string.format("[SummonService] Hero pool disappeared for %d★ roll.", star))
+		local rolledStar = RollStar(summonType)
+		local pool = GetPoolForStar(rolledStar)
+		if not pool or #pool == 0 then
 			continue
 		end
 
-		local heroDefinition = pool[RNG:NextInteger(1, #pool)]
+		local chosenHero = pool[RNG:NextInteger(1, #pool)]
 		local heroUid = HttpService:GenerateGUID(false)
+
 		profile.Heroes[heroUid] = {
 			Uid = heroUid,
-			HeroId = heroDefinition.Id,
+			HeroId = chosenHero.Id,
 			Level = 1,
-			Star = star,
+			Star = rolledStar,
 			Equipment = {},
 		}
 
 		table.insert(results, {
 			Uid = heroUid,
-			HeroId = heroDefinition.Id,
-			Name = heroDefinition.Name,
-			Star = star,
-			Role = heroDefinition.Role,
+			HeroId = chosenHero.Id,
+			Name = chosenHero.Name,
+			Star = rolledStar,
+			Role = chosenHero.Role,
 		})
 	end
 
+	-- Record daily progress
+	ProfileService.RecordDailyProgress(player, "summon_1", rollCount)
 	ProfileService.SyncProfile(player)
-	local resultRemote = SummonService.Remotes.GachaResult
-	if resultRemote then
-		resultRemote:FireClient(player, results)
+
+	local gachaRemote = SummonService.Remotes.GachaResult
+	if gachaRemote then
+		gachaRemote:FireClient(player, results)
 	end
 end
 

@@ -5,7 +5,7 @@ local Network = {
 		StateSync = "StateSync",
 		NotifyMessage = "NotifyMessage",
 
-		-- Gacha
+		-- Gacha / Summon
 		RollGacha = "RollGacha",
 		GachaResult = "GachaResult",
 
@@ -23,6 +23,17 @@ local Network = {
 		-- Campaign & Battle
 		StartBattle = "StartBattle",
 		BattleFinished = "BattleFinished",
+
+		-- Mailbox
+		ClaimMail = "ClaimMail",
+		ClaimAllMails = "ClaimAllMails",
+
+		-- Daily Missions
+		ClaimDailyMission = "ClaimDailyMission",
+		ClaimDailyChest = "ClaimDailyChest",
+
+		-- Events & Monetization
+		PurchaseStarterPack = "PurchaseStarterPack",
 
 		-- World Interaction
 		OpenLobbyModal = "OpenLobbyModal",
