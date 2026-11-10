@@ -1550,7 +1550,8 @@ function UIController.BuildMissionsModal()
 
 	local chLayout = Instance.new("UIListLayout")
 	chLayout.FillDirection = Enum.FillDirection.Horizontal
-	chLayout.HorizontalAlignment = Enum.HorizontalAlignment.SpaceAround
+	chLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	chLayout.Padding = UDim.new(0, 10)
 	chLayout.Parent = chestsContainer
 
 	local TIERS = { 20, 40, 60, 80, 100 }
