@@ -82,21 +82,11 @@ function LobbyService.SetupLobby()
 	townFolder.Parent = Workspace
 	LobbyService.TownFolder = townFolder
 
-	-- Central Plaza ground
-	local plaza = Instance.new("Part")
-	plaza.Name = "PlazaGround"
-	plaza.Size = Vector3.new(160, 2, 160)
-	plaza.Position = Vector3.new(0, -1, 0)
-	plaza.Anchored = true
-	plaza.Material = Enum.Material.Pavement
-	plaza.Color = Color3.fromRGB(55, 58, 65)
-	plaza.Parent = townFolder
-
 	-- Spawn Location
 	local spawn = Instance.new("SpawnLocation")
 	spawn.Name = "LobbySpawn"
 	spawn.Size = Vector3.new(12, 1, 12)
-	spawn.Position = Vector3.new(0, 0.5, 0)
+	spawn.Position = Vector3.new(0, 0, 0)
 	spawn.Anchored = true
 	spawn.Material = Enum.Material.Marble
 	spawn.Color = Color3.fromRGB(220, 225, 235)

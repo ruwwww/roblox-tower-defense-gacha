@@ -27,6 +27,19 @@ function CampaignService.StartBattle(player: Player, stageId: string, isSkip: bo
 		return
 	end
 
+	local requestedStageIndex = tonumber(stageId:match("-(%d+)"))
+	local highestClearedStageIndex = tonumber(prof.HighestClearedStage:match("-(%d+)")) or 0
+	if requestedStageIndex and requestedStageIndex > highestClearedStageIndex + 1 then
+		if CampaignService.Remotes.NotifyMessage then
+			CampaignService.Remotes.NotifyMessage:FireClient(
+				player,
+				"Stage is locked! Clear prior stages first.",
+				Color3.fromRGB(255, 80, 80)
+			)
+		end
+		return
+	end
+
 	-- Gather formation heroes
 	local squad = {}
 	for _, heroUid in ipairs(prof.Formation) do

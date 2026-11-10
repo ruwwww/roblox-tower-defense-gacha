@@ -9,6 +9,8 @@ local EquipmentData = require(Shared:WaitForChild("Data"):WaitForChild("Equipmen
 local StageData = require(Shared:WaitForChild("Data"):WaitForChild("StageData"))
 local MathUtil = require(Shared:WaitForChild("Utils"):WaitForChild("MathUtil"))
 
+local BattleArenaController = require(script.Parent:WaitForChild("BattleArenaController"))
+
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
 
@@ -54,12 +56,14 @@ end
 
 function UIController.Init(remotes: { [string]: RemoteEvent })
 	UIController.Remotes = remotes
+	BattleArenaController.Init()
+
 	UIController.BuildHUD()
 	UIController.BuildCampaignModal()
 	UIController.BuildBackpackModal()
+	UIController.BuildFormationModal()
 	UIController.BuildSummonModal()
 	UIController.BuildGachaRevealModal()
-	UIController.BuildBattleReplayModal()
 	UIController.BuildBattleResultModal()
 end
 
@@ -139,8 +143,8 @@ function UIController.BuildHUD()
 	-- RIGHT ACTION MENU
 	local rightMenu = Instance.new("Frame")
 	rightMenu.Name = "RightMenu"
-	rightMenu.Size = UDim2.new(0, 150, 0, 290)
-	rightMenu.Position = UDim2.new(1, -165, 0.5, -145)
+	rightMenu.Size = UDim2.new(0, 150, 0, 340)
+	rightMenu.Position = UDim2.new(1, -165, 0.5, -170)
 	rightMenu.BackgroundTransparency = 1
 	rightMenu.Parent = screenGui
 
@@ -175,6 +179,10 @@ function UIController.BuildHUD()
 
 	CreateMenuBtn("CampaignBtn", "⚔️ CAMPAIGN", Color3.fromRGB(200, 60, 60), function()
 		UIController.ToggleModal("CampaignModal")
+	end)
+
+	CreateMenuBtn("FormationBtn", "🛡️ SQUAD", Color3.fromRGB(40, 150, 110), function()
+		UIController.ToggleModal("FormationModal")
 	end)
 
 	CreateMenuBtn("HeroesBtn", "🎒 HEROES", Color3.fromRGB(50, 100, 180), function()
@@ -243,7 +251,7 @@ function UIController.BuildCampaignModal()
 		modal.Visible = false
 	end)
 
-	-- Stages Grid (Stages 1 to 10)
+	-- Stages Grid (Stages 1 to 10 sorted by LayoutOrder!)
 	local stageScroll = Instance.new("ScrollingFrame")
 	stageScroll.Name = "StageScroll"
 	stageScroll.Size = UDim2.new(0.55, 0, 0.8, 0)
@@ -253,10 +261,12 @@ function UIController.BuildCampaignModal()
 	stageScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	stageScroll.ZIndex = 11
 	stageScroll.Parent = modal
+	UIController.Elements.StageScroll = stageScroll
 
 	local sLayout = Instance.new("UIGridLayout")
 	sLayout.CellSize = UDim2.new(0, 95, 0, 95)
 	sLayout.CellPadding = UDim2.new(0, 12, 0, 12)
+	sLayout.SortOrder = Enum.SortOrder.LayoutOrder -- Strict numeric order
 	sLayout.Parent = stageScroll
 
 	-- Stage Detail Panel (Right side)
@@ -276,8 +286,8 @@ function UIController.BuildCampaignModal()
 
 	local stageNameLbl = Instance.new("TextLabel")
 	stageNameLbl.Name = "Title"
-	stageNameLbl.Size = UDim2.new(0.9, 0, 0.15, 0)
-	stageNameLbl.Position = UDim2.new(0.05, 0, 0.05, 0)
+	stageNameLbl.Size = UDim2.new(0.9, 0, 0.12, 0)
+	stageNameLbl.Position = UDim2.new(0.05, 0, 0.03, 0)
 	stageNameLbl.BackgroundTransparency = 1
 	stageNameLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
 	stageNameLbl.TextScaled = true
@@ -289,8 +299,8 @@ function UIController.BuildCampaignModal()
 
 	local stageDescLbl = Instance.new("TextLabel")
 	stageDescLbl.Name = "Desc"
-	stageDescLbl.Size = UDim2.new(0.9, 0, 0.35, 0)
-	stageDescLbl.Position = UDim2.new(0.05, 0, 0.22, 0)
+	stageDescLbl.Size = UDim2.new(0.9, 0, 0.38, 0)
+	stageDescLbl.Position = UDim2.new(0.05, 0, 0.16, 0)
 	stageDescLbl.BackgroundTransparency = 1
 	stageDescLbl.TextColor3 = Color3.fromRGB(190, 205, 225)
 	stageDescLbl.TextScaled = true
@@ -304,8 +314,8 @@ function UIController.BuildCampaignModal()
 	-- Skip Battle Checkbox Toggle
 	local skipToggle = Instance.new("TextButton")
 	skipToggle.Name = "SkipToggle"
-	skipToggle.Size = UDim2.new(0.9, 0, 0.12, 0)
-	skipToggle.Position = UDim2.new(0.05, 0, 0.62, 0)
+	skipToggle.Size = UDim2.new(0.9, 0, 0.10, 0)
+	skipToggle.Position = UDim2.new(0.05, 0, 0.56, 0)
 	skipToggle.BackgroundColor3 = Color3.fromRGB(40, 50, 70)
 	skipToggle.TextColor3 = Color3.fromRGB(100, 230, 255)
 	skipToggle.TextScaled = true
@@ -320,11 +330,32 @@ function UIController.BuildCampaignModal()
 		skipToggle.Text = isSkipEnabled and "⚡ Instant Skip: [ON]" or "▶ Watch Battle: [OFF]"
 	end)
 
+	-- Edit Formation Button inside Campaign Detail
+	local editFormBtn = Instance.new("TextButton")
+	editFormBtn.Name = "EditFormationBtn"
+	editFormBtn.Size = UDim2.new(0.9, 0, 0.11, 0)
+	editFormBtn.Position = UDim2.new(0.05, 0, 0.68, 0)
+	editFormBtn.BackgroundColor3 = Color3.fromRGB(35, 140, 95)
+	editFormBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	editFormBtn.TextScaled = true
+	editFormBtn.Font = Enum.Font.GothamBold
+	editFormBtn.Text = "🛡️ SQUAD FORMATION"
+	editFormBtn.ZIndex = 12
+	editFormBtn.Parent = detail
+
+	local efCorner = Instance.new("UICorner")
+	efCorner.CornerRadius = UDim.new(0, 8)
+	efCorner.Parent = editFormBtn
+
+	editFormBtn.MouseButton1Click:Connect(function()
+		UIController.ToggleModal("FormationModal")
+	end)
+
 	-- Battle Button
 	local battleBtn = Instance.new("TextButton")
 	battleBtn.Name = "BattleBtn"
-	battleBtn.Size = UDim2.new(0.9, 0, 0.16, 0)
-	battleBtn.Position = UDim2.new(0.05, 0, 0.78, 0)
+	battleBtn.Size = UDim2.new(0.9, 0, 0.15, 0)
+	battleBtn.Position = UDim2.new(0.05, 0, 0.81, 0)
 	battleBtn.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
 	battleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 	battleBtn.TextScaled = true
@@ -332,6 +363,7 @@ function UIController.BuildCampaignModal()
 	battleBtn.Text = "⚔️ BATTLE"
 	battleBtn.ZIndex = 12
 	battleBtn.Parent = detail
+	UIController.Elements.BattleBtn = battleBtn
 
 	local bCorner = Instance.new("UICorner")
 	bCorner.CornerRadius = UDim.new(0, 8)
@@ -343,11 +375,12 @@ function UIController.BuildCampaignModal()
 		end
 	end)
 
-	-- Populate 10 stage cards
+	-- Populate 10 stage cards with numeric LayoutOrder
 	for idx = 1, 10 do
 		local stageId = "1-" .. tostring(idx)
 		local card = Instance.new("TextButton")
 		card.Name = "StageCard_" .. idx
+		card.LayoutOrder = idx
 		card.BackgroundColor3 = (idx == 5) and Color3.fromRGB(150, 60, 30) or ((idx == 10) and Color3.fromRGB(160, 30, 60) or Color3.fromRGB(35, 40, 55))
 		card.TextColor3 = Color3.fromRGB(255, 255, 255)
 		card.TextScaled = true
@@ -367,19 +400,455 @@ function UIController.BuildCampaignModal()
 
 		card.MouseButton1Click:Connect(function()
 			UIController.SelectedStageId = stageId
-			local sDef = StageData.Get(stageId)
-			if sDef then
-				stageNameLbl.Text = sDef.Name
-				stageDescLbl.Text = string.format("Chapter %d - Stage %d\n%s\n\nFirst Clear Rewards:\n💎 %d Diamonds\n📜 %d Scrolls\n🧪 %d Elixir\n%s",
-					sDef.Chapter, sDef.StageIndex,
-					(sDef.IsBoss and "⚠️ CHAPTER BOSS FIGHT!" or (sDef.IsMiniBoss and "⚠️ MINI-BOSS ENCOUNTER!" or "Standard patrol wave.")),
-					sDef.FirstClearRewards.Diamonds,
-					sDef.FirstClearRewards.Scrolls,
-					sDef.FirstClearRewards.Elixir,
-					(sDef.FirstClearRewards.GuaranteedEquipment and ("🎁 Guaranteed: " .. sDef.FirstClearRewards.GuaranteedEquipment) or "")
-				)
-			end
+			UIController.UpdateSelectedStageDetail(stageId)
 		end)
+	end
+
+	UIController.RefreshCampaignCards()
+end
+
+function UIController.RefreshCampaignCards()
+	local scroll = UIController.Elements.StageScroll
+	if not scroll then return end
+
+	local clearedIdx = tonumber(UIController.State.HighestClearedStage:match("-(%d+)")) or 0
+
+	for idx = 1, 10 do
+		local card = scroll:FindFirstChild("StageCard_" .. idx) :: TextButton?
+		if card then
+			local stroke = card:FindFirstChildOfClass("UIStroke")
+			if idx <= clearedIdx then
+				-- Cleared stage
+				card.BackgroundColor3 = (idx == 10) and Color3.fromRGB(120, 30, 50) or ((idx == 5) and Color3.fromRGB(110, 50, 30) or Color3.fromRGB(30, 45, 60))
+				card.Text = string.format("1-%d\n★ CLEARED", idx)
+				if stroke then stroke.Color = Color3.fromRGB(60, 200, 120) end
+			elseif idx == clearedIdx + 1 then
+				-- Current unlocked active stage
+				card.BackgroundColor3 = (idx == 10) and Color3.fromRGB(180, 40, 70) or ((idx == 5) and Color3.fromRGB(170, 70, 30) or Color3.fromRGB(45, 60, 95))
+				card.Text = (idx == 10) and "1-10\n👑 BOSS" or ((idx == 5) and "1-5\n👹 MINI-BOSS" or string.format("1-%d\n⚔️ ACTIVE", idx))
+				if stroke then stroke.Color = Color3.fromRGB(255, 220, 60) end
+			else
+				-- Locked future stage (viewable preview)
+				card.BackgroundColor3 = Color3.fromRGB(20, 22, 28)
+				card.Text = string.format("1-%d\n🔒 LOCKED", idx)
+				if stroke then stroke.Color = Color3.fromRGB(50, 55, 65) end
+			end
+		end
+	end
+
+	UIController.UpdateSelectedStageDetail(UIController.SelectedStageId)
+end
+
+function UIController.UpdateSelectedStageDetail(stageId: string)
+	local stageNameLbl = UIController.Elements.StageTitle
+	local stageDescLbl = UIController.Elements.StageDesc
+	local battleBtn = UIController.Elements.BattleBtn
+	if not stageNameLbl or not stageDescLbl or not battleBtn then return end
+
+	local sDef = StageData.Get(stageId)
+	if not sDef then return end
+
+	local selIdx = sDef.StageIndex
+	local clearedIdx = tonumber(UIController.State.HighestClearedStage:match("-(%d+)")) or 0
+	local isLocked = selIdx > (clearedIdx + 1)
+
+	stageNameLbl.Text = sDef.Name .. (isLocked and " [LOCKED]" or "")
+	stageDescLbl.Text = string.format(
+		"Chapter %d - Stage %d\n%s\n\nFirst Clear Rewards:\n💎 %d Diamonds\n📜 %d Scrolls\n🧪 %d Elixir\n%s\n\nAFK Loot Rate:\n💰 +%d/m  🧪 +%d/m",
+		sDef.Chapter, sDef.StageIndex,
+		(sDef.IsBoss and "⚠️ CHAPTER BOSS FIGHT!" or (sDef.IsMiniBoss and "⚠️ MINI-BOSS ENCOUNTER!" or (isLocked and "🔒 Stage locked. Clear prior stages to access." or "Ready for combat!"))),
+		sDef.FirstClearRewards.Diamonds,
+		sDef.FirstClearRewards.Scrolls,
+		sDef.FirstClearRewards.Elixir,
+		(sDef.FirstClearRewards.GuaranteedEquipment and ("🎁 Guaranteed: " .. sDef.FirstClearRewards.GuaranteedEquipment) or ""),
+		sDef.AfkRates.GoldPerMin,
+		sDef.AfkRates.ElixirPerMin
+	)
+
+	if isLocked then
+		battleBtn.Text = string.format("🔒 LOCKED (Clear 1-%d first)", clearedIdx + 1)
+		battleBtn.BackgroundColor3 = Color3.fromRGB(55, 60, 70)
+		battleBtn.Active = false
+	else
+		battleBtn.Text = (selIdx <= clearedIdx) and "⚔️ REPEAT BATTLE" or "⚔️ BATTLE"
+		battleBtn.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
+		battleBtn.Active = true
+	end
+end
+
+function UIController.BuildFormationModal()
+	local modal = Instance.new("Frame")
+	modal.Name = "FormationModal"
+	modal.Size = UDim2.new(0.8, 0, 0.82, 0)
+	modal.Position = UDim2.new(0.1, 0, 0.09, 0)
+	modal.BackgroundColor3 = Color3.fromRGB(16, 18, 26)
+	modal.BorderSizePixel = 0
+	modal.Visible = false
+	modal.ZIndex = 15
+	modal.Parent = UIController.ScreenGui
+	UIController.Elements.FormationModal = modal
+
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 16)
+	corner.Parent = modal
+
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = Color3.fromRGB(40, 170, 110)
+	stroke.Thickness = 2.5
+	stroke.Parent = modal
+
+	-- Header
+	local header = Instance.new("TextLabel")
+	header.Size = UDim2.new(0.6, 0, 0, 45)
+	header.Position = UDim2.new(0.04, 0, 0, 10)
+	header.BackgroundTransparency = 1
+	header.TextColor3 = Color3.fromRGB(100, 255, 180)
+	header.TextScaled = true
+	header.Font = Enum.Font.GothamBlack
+	header.TextXAlignment = Enum.TextXAlignment.Left
+	header.Text = "🛡️ SQUAD FORMATION SETUP (Max 6 Heroes)"
+	header.ZIndex = 16
+	header.Parent = modal
+
+	-- Auto Formation Button
+	local autoBtn = Instance.new("TextButton")
+	autoBtn.Size = UDim2.new(0, 180, 0, 38)
+	autoBtn.Position = UDim2.new(1, -240, 0, 14)
+	autoBtn.BackgroundColor3 = Color3.fromRGB(30, 140, 90)
+	autoBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	autoBtn.TextScaled = true
+	autoBtn.Font = Enum.Font.GothamBold
+	autoBtn.Text = "⚡ AUTO FORMATION"
+	autoBtn.ZIndex = 16
+	autoBtn.Parent = modal
+
+	local aCorn = Instance.new("UICorner")
+	aCorn.CornerRadius = UDim.new(0, 8)
+	aCorn.Parent = autoBtn
+
+	autoBtn.MouseButton1Click:Connect(function()
+		UIController.AutoFormSquad()
+	end)
+
+	local closeBtn = Instance.new("TextButton")
+	closeBtn.Size = UDim2.new(0, 36, 0, 36)
+	closeBtn.Position = UDim2.new(1, -44, 0, 14)
+	closeBtn.BackgroundColor3 = Color3.fromRGB(220, 50, 60)
+	closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	closeBtn.Text = "X"
+	closeBtn.TextScaled = true
+	closeBtn.Font = Enum.Font.GothamBold
+	closeBtn.ZIndex = 16
+	closeBtn.Parent = modal
+
+	local cCorner = Instance.new("UICorner")
+	cCorner.CornerRadius = UDim.new(0, 8)
+	cCorner.Parent = closeBtn
+
+	closeBtn.MouseButton1Click:Connect(function()
+		modal.Visible = false
+	end)
+
+	-- Upper: Active 6 Squad Slots
+	local slotsFrame = Instance.new("Frame")
+	slotsFrame.Name = "SlotsFrame"
+	slotsFrame.Size = UDim2.new(0.92, 0, 0.35, 0)
+	slotsFrame.Position = UDim2.new(0.04, 0, 0.12, 0)
+	slotsFrame.BackgroundColor3 = Color3.fromRGB(22, 25, 36)
+	slotsFrame.ZIndex = 16
+	slotsFrame.Parent = modal
+	UIController.Elements.FormationSlotsFrame = slotsFrame
+
+	local sCorn = Instance.new("UICorner")
+	sCorn.CornerRadius = UDim.new(0, 12)
+	sCorn.Parent = slotsFrame
+
+	local sLayout = Instance.new("UIGridLayout")
+	sLayout.CellSize = UDim2.new(0.155, 0, 0.88, 0)
+	sLayout.CellPadding = UDim2.new(0.012, 0, 0, 0)
+	sLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+	sLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+	sLayout.SortOrder = Enum.SortOrder.LayoutOrder
+	sLayout.Parent = slotsFrame
+
+	-- Lower: Available Heroes Backpack
+	local lowerTitle = Instance.new("TextLabel")
+	lowerTitle.Size = UDim2.new(0.92, 0, 0, 28)
+	lowerTitle.Position = UDim2.new(0.04, 0, 0.49, 0)
+	lowerTitle.BackgroundTransparency = 1
+	lowerTitle.TextColor3 = Color3.fromRGB(200, 215, 235)
+	lowerTitle.TextScaled = true
+	lowerTitle.Font = Enum.Font.GothamBold
+	lowerTitle.TextXAlignment = Enum.TextXAlignment.Left
+	lowerTitle.Text = "📦 AVAILABLE HEROES (Click to Add / Swap into Squad):"
+	lowerTitle.ZIndex = 16
+	lowerTitle.Parent = modal
+
+	local pickerScroll = Instance.new("ScrollingFrame")
+	pickerScroll.Name = "PickerScroll"
+	pickerScroll.Size = UDim2.new(0.92, 0, 0.44, 0)
+	pickerScroll.Position = UDim2.new(0.04, 0, 0.53, 0)
+	pickerScroll.BackgroundTransparency = 1
+	pickerScroll.BorderSizePixel = 0
+	pickerScroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	pickerScroll.ZIndex = 16
+	pickerScroll.Parent = modal
+	UIController.Elements.FormationPickerScroll = pickerScroll
+
+	local pLayout = Instance.new("UIGridLayout")
+	pLayout.CellSize = UDim2.new(0, 105, 0, 120)
+	pLayout.CellPadding = UDim2.new(0, 10, 0, 10)
+	pLayout.Parent = pickerScroll
+end
+
+function UIController.RefreshFormationUI()
+	local slotsFrame = UIController.Elements.FormationSlotsFrame
+	local pickerScroll = UIController.Elements.FormationPickerScroll
+	if not slotsFrame or not pickerScroll then return end
+
+	-- 1. Render 6 Formation Slots
+	for _, child in ipairs(slotsFrame:GetChildren()) do
+		if child:IsA("Frame") or child:IsA("TextButton") then
+			child:Destroy()
+		end
+	end
+
+	for slotIdx = 1, 6 do
+		local heroUid = UIController.State.Formation[slotIdx]
+		local inst = heroUid and UIController.State.Heroes[heroUid]
+		local def = inst and HeroData.Get(inst.HeroId)
+
+		local slotBox = Instance.new("Frame")
+		slotBox.Name = "Slot_" .. slotIdx
+		slotBox.LayoutOrder = slotIdx
+		slotBox.BackgroundColor3 = inst and Color3.fromRGB(30, 35, 50) or Color3.fromRGB(24, 26, 32)
+		slotBox.ZIndex = 17
+		slotBox.Parent = slotsFrame
+
+		local bCorn = Instance.new("UICorner")
+		bCorn.CornerRadius = UDim.new(0, 10)
+		bCorn.Parent = slotBox
+
+		local bStroke = Instance.new("UIStroke")
+		bStroke.Color = inst and GetStarColor(inst.Star) or Color3.fromRGB(50, 55, 70)
+		bStroke.Thickness = inst and 2 or 1
+		bStroke.Parent = slotBox
+
+		if inst and def then
+			local roleIcon = "🛡️"
+			if def.Role == "Guard" then roleIcon = "⚔️"
+			elseif def.Role == "Sniper" then roleIcon = "🏹"
+			elseif def.Role == "Caster" then roleIcon = "🔥"
+			elseif def.Role == "Medic" then roleIcon = "🌿"
+			end
+
+			local nameLbl = Instance.new("TextLabel")
+			nameLbl.Size = UDim2.new(0.9, 0, 0.45, 0)
+			nameLbl.Position = UDim2.new(0.05, 0, 0.05, 0)
+			nameLbl.BackgroundTransparency = 1
+			nameLbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+			nameLbl.TextScaled = true
+			nameLbl.Font = Enum.Font.GothamBold
+			nameLbl.Text = roleIcon .. "\n" .. def.Name
+			nameLbl.ZIndex = 18
+			nameLbl.Parent = slotBox
+
+			local lvlLbl = Instance.new("TextLabel")
+			lylLbl.Size = UDim2.new(0.9, 0, 0.25, 0)
+			lylLbl.Position = UDim2.new(0.05, 0, 0.48, 0)
+			lylLbl.BackgroundTransparency = 1
+			lylLbl.TextColor3 = Color3.fromRGB(100, 220, 255)
+			lylLbl.TextScaled = true
+			lylLbl.Font = Enum.Font.GothamBold
+			lylLbl.Text = "Lv." .. inst.Level .. " " .. GetStars(inst.Star)
+			lylLbl.ZIndex = 18
+			lylLbl.Parent = slotBox
+
+			local removeBtn = Instance.new("TextButton")
+			removeBtn.Size = UDim2.new(0.85, 0, 0.22, 0)
+			removeBtn.Position = UDim2.new(0.075, 0, 0.74, 0)
+			removeBtn.BackgroundColor3 = Color3.fromRGB(180, 45, 45)
+			removeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+			removeBtn.TextScaled = true
+			removeBtn.Font = Enum.Font.GothamBold
+			removeBtn.Text = "REMOVE"
+			removeBtn.ZIndex = 18
+			removeBtn.Parent = slotBox
+
+			local rCorn = Instance.new("UICorner")
+			rCorn.CornerRadius = UDim.new(0, 6)
+			rCorn.Parent = removeBtn
+
+			removeBtn.MouseButton1Click:Connect(function()
+				local newFormation = {}
+				for _, uid in ipairs(UIController.State.Formation) do
+					if uid ~= heroUid then
+						table.insert(newFormation, uid)
+					end
+				end
+				if #newFormation > 0 and UIController.Remotes.UpdateFormation then
+					UIController.Remotes.UpdateFormation:FireServer(newFormation)
+				end
+			end)
+		else
+			local emptyLbl = Instance.new("TextLabel")
+			emptyLbl.Size = UDim2.new(0.9, 0, 0.6, 0)
+			emptyLbl.Position = UDim2.new(0.05, 0, 0.2, 0)
+			emptyLbl.BackgroundTransparency = 1
+			emptyLbl.TextColor3 = Color3.fromRGB(90, 100, 120)
+			emptyLbl.TextScaled = true
+			emptyLbl.Font = Enum.Font.GothamBold
+			emptyLbl.Text = string.format("[Slot %d]\n+ Empty", slotIdx)
+			emptyLbl.ZIndex = 18
+			emptyLbl.Parent = slotBox
+		end
+	end
+
+	-- 2. Render Backpack Heroes Picker
+	for _, child in ipairs(pickerScroll:GetChildren()) do
+		if child:IsA("TextButton") then
+			child:Destroy()
+		end
+	end
+
+	for uid, inst in pairs(UIController.State.Heroes) do
+		local def = HeroData.Get(inst.HeroId)
+		if def then
+			local inSquad = table.find(UIController.State.Formation, uid) ~= nil
+
+			local btn = Instance.new("TextButton")
+			btn.Name = "HeroPick_" .. uid
+			btn.BackgroundColor3 = inSquad and Color3.fromRGB(24, 26, 32) or Color3.fromRGB(32, 38, 52)
+			btn.ZIndex = 17
+			btn.Parent = pickerScroll
+
+			local bCorn = Instance.new("UICorner")
+			bCorn.CornerRadius = UDim.new(0, 8)
+			bCorn.Parent = btn
+
+			local bStroke = Instance.new("UIStroke")
+			bStroke.Color = inSquad and Color3.fromRGB(60, 65, 75) or GetStarColor(inst.Star)
+			bStroke.Thickness = 2
+			bStroke.Parent = btn
+
+			local roleIcon = "🛡️"
+			if def.Role == "Guard" then roleIcon = "⚔️"
+			elseif def.Role == "Sniper" then roleIcon = "🏹"
+			elseif def.Role == "Caster" then roleIcon = "🔥"
+			elseif def.Role == "Medic" then roleIcon = "🌿"
+			end
+
+			local nameLbl = Instance.new("TextLabel")
+			nameLbl.Size = UDim2.new(0.9, 0, 0.45, 0)
+			nameLbl.Position = UDim2.new(0.05, 0, 0.05, 0)
+			nameLbl.BackgroundTransparency = 1
+			nameLbl.TextColor3 = inSquad and Color3.fromRGB(120, 130, 140) or Color3.fromRGB(255, 255, 255)
+			nameLbl.TextScaled = true
+			nameLbl.Font = Enum.Font.GothamBold
+			nameLbl.Text = roleIcon .. "\n" .. def.Name
+			nameLbl.ZIndex = 18
+			nameLbl.Parent = btn
+
+			local statusLbl = Instance.new("TextLabel")
+			statusLbl.Size = UDim2.new(0.9, 0, 0.35, 0)
+			statusLbl.Position = UDim2.new(0.05, 0, 0.55, 0)
+			statusLbl.BackgroundTransparency = 1
+			statusLbl.TextColor3 = inSquad and Color3.fromRGB(80, 180, 120) or Color3.fromRGB(100, 220, 255)
+			statusLbl.TextScaled = true
+			statusLbl.Font = Enum.Font.GothamBold
+			statusLbl.Text = inSquad and "✓ IN SQUAD" or ("Lv." .. inst.Level .. "\n[+ ADD]")
+			statusLbl.ZIndex = 18
+			statusLbl.Parent = btn
+
+			btn.MouseButton1Click:Connect(function()
+				if inSquad then
+					-- Remove from squad
+					local newFormation = {}
+					for _, fUid in ipairs(UIController.State.Formation) do
+						if fUid ~= uid then
+							table.insert(newFormation, fUid)
+						end
+					end
+					if #newFormation > 0 and UIController.Remotes.UpdateFormation then
+						UIController.Remotes.UpdateFormation:FireServer(newFormation)
+					end
+				else
+					-- Add to squad if < 6
+					if #UIController.State.Formation >= 6 then
+						UIController.ShowNotification("Squad is full! Remove a hero first.", Color3.fromRGB(255, 100, 100))
+						return
+					end
+					local newFormation = table.clone(UIController.State.Formation)
+					table.insert(newFormation, uid)
+					if UIController.Remotes.UpdateFormation then
+						UIController.Remotes.UpdateFormation:FireServer(newFormation)
+					end
+				end
+			end)
+		end
+	end
+end
+
+function UIController.AutoFormSquad()
+	local allHeroes = {}
+	for uid, inst in pairs(UIController.State.Heroes) do
+		local def = HeroData.Get(inst.HeroId)
+		if def then
+			table.insert(allHeroes, { Uid = uid, Inst = inst, Def = def })
+		end
+	end
+
+	if #allHeroes == 0 then return end
+
+	-- Sort by Level desc, Star desc
+	table.sort(allHeroes, function(a, b)
+		if a.Inst.Star ~= b.Inst.Star then
+			return a.Inst.Star > b.Inst.Star
+		end
+		return a.Inst.Level > b.Inst.Level
+	end)
+
+	local selectedUids = {}
+	local hasRole = {}
+
+	-- 1. Try pick 1 best Defender
+	for _, h in ipairs(allHeroes) do
+		if h.Def.Role == "Defender" and not hasRole["Defender"] then
+			table.insert(selectedUids, h.Uid)
+			hasRole["Defender"] = true
+			break
+		end
+	end
+
+	-- 2. Try pick 1 best Guard
+	for _, h in ipairs(allHeroes) do
+		if h.Def.Role == "Guard" and not hasRole["Guard"] and not table.find(selectedUids, h.Uid) then
+			table.insert(selectedUids, h.Uid)
+			hasRole["Guard"] = true
+			break
+		end
+	end
+
+	-- 3. Try pick 1 best Medic
+	for _, h in ipairs(allHeroes) do
+		if h.Def.Role == "Medic" and not hasRole["Medic"] and not table.find(selectedUids, h.Uid) then
+			table.insert(selectedUids, h.Uid)
+			hasRole["Medic"] = true
+			break
+		end
+	end
+
+	-- 4. Fill remaining slots up to 6 with highest level/star heroes
+	for _, h in ipairs(allHeroes) do
+		if #selectedUids >= 6 then break end
+		if not table.find(selectedUids, h.Uid) then
+			table.insert(selectedUids, h.Uid)
+		end
+	end
+
+	if #selectedUids > 0 and UIController.Remotes.UpdateFormation then
+		UIController.Remotes.UpdateFormation:FireServer(selectedUids)
+		UIController.ShowNotification(string.format("⚡ Auto Formation: %d Heroes deployed!", #selectedUids), Color3.fromRGB(100, 255, 150))
 	end
 end
 
@@ -510,27 +979,20 @@ function UIController.BuildBackpackModal()
 
 	levelUpBtn.MouseButton1Click:Connect(function()
 		local uid = UIController.SelectedHeroUid
-		if not uid then
-			return
-		end
+		if not uid then return end
 
 		local inst = UIController.State.Heroes[uid]
-		if not inst then
-			return
-		end
+		if not inst then return end
 
 		local cap = HeroData.GetLevelCap(inst.Star)
 		if inst.Level >= cap then
 			-- Trigger Star Up
 			if UIController.Remotes.StarUpHero then
-				-- Auto pick fodder for demo
 				local sacrifices = {}
 				for otherUid, otherHero in pairs(UIController.State.Heroes) do
 					if otherUid ~= uid and otherHero.Star == inst.Star and not table.find(UIController.State.Formation, otherUid) then
 						table.insert(sacrifices, otherUid)
-						if #sacrifices >= 2 then
-							break
-						end
+						if #sacrifices >= 2 then break end
 					end
 				end
 				UIController.Remotes.StarUpHero:FireServer(uid, sacrifices)
@@ -595,7 +1057,6 @@ function UIController.BuildSummonModal()
 		modal.Visible = false
 	end)
 
-	-- Subtitle & Rates
 	local subTitle = Instance.new("TextLabel")
 	subTitle.Size = UDim2.new(0.9, 0, 0.08, 0)
 	subTitle.Position = UDim2.new(0.05, 0, 0.09, 0)
@@ -607,7 +1068,6 @@ function UIController.BuildSummonModal()
 	subTitle.ZIndex = 11
 	subTitle.Parent = modal
 
-	-- Container for 2 options: 1x Roll and 10x Roll
 	local cardsContainer = Instance.new("Frame")
 	cardsContainer.Size = UDim2.new(0.9, 0, 0.72, 0)
 	cardsContainer.Position = UDim2.new(0.05, 0, 0.22, 0)
@@ -649,7 +1109,6 @@ function UIController.BuildSummonModal()
 	card1Title.ZIndex = 13
 	card1Title.Parent = card1x
 
-	-- Button 1: 1 Scroll
 	local btnScroll1 = Instance.new("TextButton")
 	btnScroll1.Size = UDim2.new(0.85, 0, 0.25, 0)
 	btnScroll1.Position = UDim2.new(0.075, 0, 0.38, 0)
@@ -671,7 +1130,6 @@ function UIController.BuildSummonModal()
 		end
 	end)
 
-	-- Button 2: 200 Diamonds
 	local btnDia1 = Instance.new("TextButton")
 	btnDia1.Size = UDim2.new(0.85, 0, 0.25, 0)
 	btnDia1.Position = UDim2.new(0.075, 0, 0.68, 0)
@@ -721,7 +1179,6 @@ function UIController.BuildSummonModal()
 	card10Title.ZIndex = 13
 	card10Title.Parent = card10x
 
-	-- Button 1: 10 Scrolls
 	local btnScroll10 = Instance.new("TextButton")
 	btnScroll10.Size = UDim2.new(0.85, 0, 0.25, 0)
 	btnScroll10.Position = UDim2.new(0.075, 0, 0.38, 0)
@@ -743,7 +1200,6 @@ function UIController.BuildSummonModal()
 		end
 	end)
 
-	-- Button 2: 1800 Diamonds (10% OFF!)
 	local btnDia10 = Instance.new("TextButton")
 	btnDia10.Size = UDim2.new(0.85, 0, 0.25, 0)
 	btnDia10.Position = UDim2.new(0.075, 0, 0.68, 0)
@@ -834,90 +1290,6 @@ function UIController.BuildGachaRevealModal()
 	end)
 end
 
-function UIController.BuildBattleReplayModal()
-	local modal = Instance.new("Frame")
-	modal.Name = "BattleReplayModal"
-	modal.Size = UDim2.new(0.85, 0, 0.88, 0)
-	modal.Position = UDim2.new(0.075, 0, 0.06, 0)
-	modal.BackgroundColor3 = Color3.fromRGB(15, 18, 26)
-	modal.BorderSizePixel = 0
-	modal.Visible = false
-	modal.ZIndex = 25
-	modal.Parent = UIController.ScreenGui
-	UIController.Elements.BattleReplayModal = modal
-
-	local corner = Instance.new("UICorner")
-	corner.CornerRadius = UDim.new(0, 16)
-	corner.Parent = modal
-
-	local stroke = Instance.new("UIStroke")
-	stroke.Color = Color3.fromRGB(70, 100, 150)
-	stroke.Thickness = 2
-	stroke.Parent = modal
-
-	-- Header Bar
-	local replayTitle = Instance.new("TextLabel")
-	replayTitle.Size = UDim2.new(0.5, 0, 0, 45)
-	replayTitle.Position = UDim2.new(0.04, 0, 0, 8)
-	replayTitle.BackgroundTransparency = 1
-	replayTitle.TextColor3 = Color3.fromRGB(255, 220, 80)
-	replayTitle.TextScaled = true
-	replayTitle.Font = Enum.Font.GothamBold
-	replayTitle.TextXAlignment = Enum.TextXAlignment.Left
-	replayTitle.Text = "⚔️ BATTLE REPLAY"
-	replayTitle.ZIndex = 26
-	replayTitle.Parent = modal
-	UIController.Elements.ReplayTitle = replayTitle
-
-	local crystalHpLbl = Instance.new("TextLabel")
-	crystalHpLbl.Size = UDim2.new(0.25, 0, 0, 40)
-	crystalHpLbl.Position = UDim2.new(0.5, 0, 0, 10)
-	crystalHpLbl.BackgroundTransparency = 1
-	crystalHpLbl.TextColor3 = Color3.fromRGB(100, 220, 255)
-	crystalHpLbl.TextScaled = true
-	crystalHpLbl.Font = Enum.Font.GothamBold
-	crystalHpLbl.Text = "💎 Crystal: 20/20"
-	crystalHpLbl.ZIndex = 26
-	crystalHpLbl.Parent = modal
-	UIController.Elements.ReplayCrystalHp = crystalHpLbl
-
-	-- Skip Button
-	local skipBtn = Instance.new("TextButton")
-	skipBtn.Size = UDim2.new(0, 110, 0, 38)
-	skipBtn.Position = UDim2.new(1, -125, 0, 12)
-	skipBtn.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
-	skipBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-	skipBtn.TextScaled = true
-	skipBtn.Font = Enum.Font.GothamBold
-	skipBtn.Text = "⚡ SKIP"
-	skipBtn.ZIndex = 26
-	skipBtn.Parent = modal
-
-	local sCorner = Instance.new("UICorner")
-	sCorner.CornerRadius = UDim.new(0, 8)
-	sCorner.Parent = skipBtn
-	UIController.Elements.ReplaySkipBtn = skipBtn
-
-	-- 2D Grid Canvas (10 cols x 8 rows)
-	local gridFrame = Instance.new("Frame")
-	gridFrame.Name = "TileGrid"
-	gridFrame.Size = UDim2.new(0.92, 0, 0.82, 0)
-	gridFrame.Position = UDim2.new(0.04, 0, 0.14, 0)
-	gridFrame.BackgroundColor3 = Color3.fromRGB(22, 26, 36)
-	gridFrame.ZIndex = 26
-	gridFrame.Parent = modal
-	UIController.Elements.ReplayGridFrame = gridFrame
-
-	local gCorner = Instance.new("UICorner")
-	gCorner.CornerRadius = UDim.new(0, 10)
-	gCorner.Parent = gridFrame
-
-	local gLayout = Instance.new("UIGridLayout")
-	gLayout.CellSize = UDim2.new(0.092, 0, 0.115, 0)
-	gLayout.CellPadding = UDim2.new(0.008, 0, 0.008, 0)
-	gLayout.Parent = gridFrame
-end
-
 function UIController.BuildBattleResultModal()
 	local modal = Instance.new("Frame")
 	modal.Name = "BattleResultModal"
@@ -984,9 +1356,16 @@ function UIController.BuildBattleResultModal()
 end
 
 function UIController.ToggleModal(modalName: string)
-	local modals = { "CampaignModal", "BackpackModal", "SummonModal", "BattleResultModal", "BattleReplayModal" }
+	local modals = { "CampaignModal", "BackpackModal", "FormationModal", "SummonModal", "BattleResultModal" }
 	local target = UIController.Elements[modalName]
-	if not target then
+
+	if modalName == "" or not target then
+		for _, name in ipairs(modals) do
+			local m = UIController.Elements[name]
+			if m then
+				m.Visible = false
+			end
+		end
 		return
 	end
 
@@ -1001,14 +1380,16 @@ function UIController.ToggleModal(modalName: string)
 	target.Visible = willBeVisible
 	if modalName == "BackpackModal" and willBeVisible then
 		UIController.RefreshHeroGrid()
+	elseif modalName == "FormationModal" and willBeVisible then
+		UIController.RefreshFormationUI()
+	elseif modalName == "CampaignModal" and willBeVisible then
+		UIController.RefreshCampaignCards()
 	end
 end
 
 function UIController.RefreshHeroGrid()
 	local scroll = UIController.Elements.HeroScroll
-	if not scroll then
-		return
-	end
+	if not scroll then return end
 
 	for _, child in ipairs(scroll:GetChildren()) do
 		if child:IsA("TextButton") then
@@ -1074,7 +1455,6 @@ function UIController.RefreshHeroGrid()
 		end
 	end
 
-	-- Auto select first hero if none selected
 	if not UIController.SelectedHeroUid then
 		for uid in pairs(UIController.State.Heroes) do
 			UIController.SelectHero(uid)
@@ -1086,14 +1466,10 @@ end
 function UIController.SelectHero(uid: string)
 	UIController.SelectedHeroUid = uid
 	local inst = UIController.State.Heroes[uid]
-	if not inst then
-		return
-	end
+	if not inst then return end
 
 	local def = HeroData.Get(inst.HeroId)
-	if not def then
-		return
-	end
+	if not def then return end
 
 	local hName = UIController.Elements.HeroDetailName
 	local hStats = UIController.Elements.HeroDetailStats
@@ -1157,14 +1533,19 @@ function UIController.OnStateSync(data: any)
 	if UIController.SelectedHeroUid then
 		UIController.SelectHero(UIController.SelectedHeroUid)
 	end
+
+	if UIController.Elements.CampaignModal and UIController.Elements.CampaignModal.Visible then
+		UIController.RefreshCampaignCards()
+	end
+	if UIController.Elements.FormationModal and UIController.Elements.FormationModal.Visible then
+		UIController.RefreshFormationUI()
+	end
 end
 
 function UIController.OnGachaResult(results: { any })
 	local modal = UIController.Elements.GachaRevealModal
 	local scroll = UIController.Elements.GachaRevealScroll
-	if not modal or not scroll then
-		return
-	end
+	if not modal or not scroll then return end
 
 	for _, child in ipairs(scroll:GetChildren()) do
 		if child:IsA("Frame") then
@@ -1232,147 +1613,15 @@ function UIController.OnGachaResult(results: { any })
 	modal.Visible = true
 end
 
-function UIController.PlayBattleReplay(data: any)
-	local modal = UIController.Elements.BattleReplayModal
-	local grid = UIController.Elements.ReplayGridFrame
-	local title = UIController.Elements.ReplayTitle
-	local crystalHp = UIController.Elements.ReplayCrystalHp
-	local skipBtn = UIController.Elements.ReplaySkipBtn
-	if not modal or not grid then
-		UIController.OnBattleFinishedDirect(data)
-		return
-	end
-
-	modal.Visible = true
-	if title then
-		title.Text = string.format("⚔️ %s [%s]", data.StageName, data.StageId)
-	end
-	if crystalHp then
-		crystalHp.Text = string.format("💎 Crystal: %d/%d", data.CrystalHp, data.MaxCrystalHp)
-	end
-
-	-- Clear old tiles
-	for _, child in ipairs(grid:GetChildren()) do
-		if child:IsA("Frame") then
-			child:Destroy()
-		end
-	end
-
-	local stageDef = StageData.Get(data.StageId)
-	local gridMap = stageDef and stageDef.Map.Grid or {}
-	local tilesByCoord = {}
-
-	for y = 1, 8 do
-		local row = gridMap[y] or {}
-		for x = 1, 10 do
-			local tileType = row[x] or "Ground"
-			local tile = Instance.new("Frame")
-			tile.Name = string.format("Tile_%d_%d", x, y)
-			tile.ZIndex = 27
-
-			if tileType == "Path" then
-				tile.BackgroundColor3 = Color3.fromRGB(110, 95, 75) -- Dirt path
-			elseif tileType == "HighGround" then
-				tile.BackgroundColor3 = Color3.fromRGB(50, 55, 70) -- Stone pillar
-			else
-				tile.BackgroundColor3 = Color3.fromRGB(40, 75, 45) -- Lush grass ground
-			end
-
-			local c = Instance.new("UICorner")
-			c.CornerRadius = UDim.new(0, 6)
-			c.Parent = tile
-
-			if x == 1 and y == 4 then
-				local sp = Instance.new("TextLabel")
-				sp.Size = UDim2.new(1, 0, 1, 0)
-				sp.BackgroundTransparency = 1
-				sp.Text = "🚪"
-				sp.TextScaled = true
-				sp.ZIndex = 28
-				sp.Parent = tile
-			elseif x == 10 and y == 4 then
-				local cr = Instance.new("TextLabel")
-				cr.Size = UDim2.new(1, 0, 1, 0)
-				cr.BackgroundTransparency = 1
-				cr.Text = "💎"
-				cr.TextScaled = true
-				cr.ZIndex = 28
-				cr.Parent = tile
-			end
-
-			tile.Parent = grid
-			tilesByCoord[x .. "_" .. y] = tile
-		end
-	end
-
-	-- Render Deployed Heroes from Auto-Formation
-	if data.Formation then
-		for _, formHero in ipairs(data.Formation) do
-			local tileKey = formHero.GridX .. "_" .. formHero.GridY
-			local targetTile = tilesByCoord[tileKey]
-			if targetTile then
-				local heroToken = Instance.new("Frame")
-				heroToken.Size = UDim2.new(0.85, 0, 0.85, 0)
-				heroToken.Position = UDim2.new(0.075, 0, 0.075, 0)
-				heroToken.BackgroundColor3 = (formHero.PlacementType == "Ground") and Color3.fromRGB(30, 90, 160) or Color3.fromRGB(140, 50, 160)
-				heroToken.ZIndex = 29
-				heroToken.Parent = targetTile
-
-				local tokCorner = Instance.new("UICorner")
-				tokCorner.CornerRadius = UDim.new(1, 0)
-				tokCorner.Parent = heroToken
-
-				local tokStroke = Instance.new("UIStroke")
-				tokStroke.Color = Color3.fromRGB(255, 230, 100)
-				tokStroke.Thickness = 1.5
-				tokStroke.Parent = heroToken
-
-				local roleEmoji = "🛡️"
-				if formHero.Role == "Guard" then roleEmoji = "⚔️"
-				elseif formHero.Role == "Sniper" then roleEmoji = "🏹"
-				elseif formHero.Role == "Caster" then roleEmoji = "🔥"
-				elseif formHero.Role == "Medic" then roleEmoji = "🌿"
-				end
-
-				local tokLbl = Instance.new("TextLabel")
-				tokLbl.Size = UDim2.new(1, 0, 1, 0)
-				tokLbl.BackgroundTransparency = 1
-				tokLbl.Text = roleEmoji
-				tokLbl.TextScaled = true
-				tokLbl.ZIndex = 30
-				tokLbl.Parent = heroToken
-			end
-		end
-	end
-
-	local isCancelled = false
-	local skipConn: RBXScriptConnection?
-	local function EndReplay()
-		if isCancelled then return end
-		isCancelled = true
-		if skipConn then
-			skipConn:Disconnect()
-		end
-		modal.Visible = false
-		UIController.OnBattleFinishedDirect(data)
-	end
-
-	if skipBtn then
-		skipConn = skipBtn.MouseButton1Click:Connect(function()
-			EndReplay()
-		end)
-	end
-
-	task.delay(3.5, function()
-		EndReplay()
-	end)
-end
-
 function UIController.OnBattleFinished(data: any)
 	if data.IsSkip then
 		UIController.OnBattleFinishedDirect(data)
 	else
-		UIController.PlayBattleReplay(data)
+		-- Close all UI modals and enter 3D Scene World Replay!
+		UIController.ToggleModal("")
+		BattleArenaController.Start3DBattle(data, function()
+			UIController.OnBattleFinishedDirect(data)
+		end)
 	end
 end
 
@@ -1380,9 +1629,7 @@ function UIController.OnBattleFinishedDirect(data: any)
 	local modal = UIController.Elements.BattleResultModal
 	local title = UIController.Elements.ResultTitle
 	local body = UIController.Elements.ResultBody
-	if not modal or not title or not body then
-		return
-	end
+	if not modal or not title or not body then return end
 
 	modal.Visible = true
 
@@ -1402,7 +1649,7 @@ function UIController.OnBattleFinishedDirect(data: any)
 		title.Text = "💀 DEFEAT! 💀"
 		title.TextColor3 = Color3.fromRGB(255, 60, 60)
 		body.Text = string.format(
-			"%s [%s]\n\nYour defenses were breached!\nUpgrade your heroes' level in the Backpack\nor Star-Up your blockers to withstand the waves!",
+			"%s [%s]\n\nYour defenses were breached!\nUpgrade your heroes' level in the Backpack,\nadjust squad formation, or Star-Up your blockers!",
 			data.StageName, data.StageId
 		)
 	end
@@ -1410,9 +1657,7 @@ end
 
 function UIController.ShowNotification(message: string, color: Color3?)
 	local screenGui = UIController.ScreenGui
-	if not screenGui then
-		return
-	end
+	if not screenGui then return end
 
 	local toast = Instance.new("Frame")
 	toast.Size = UDim2.new(0, 380, 0, 48)

@@ -12,6 +12,47 @@ function HeroService.Init(remotes: { [string]: RemoteEvent })
 	HeroService.Remotes = remotes
 end
 
+function HeroService.UpdateFormation(player: Player, heroUids: { string })
+	local prof = ProfileService.Get(player)
+	if not prof then
+		return
+	end
+
+	local selectedUids: { string } = {}
+	local seenUids: { [string]: boolean } = {}
+	local entryCount = 0
+
+	for index, heroUid in pairs(heroUids) do
+		if typeof(index) ~= "number" or index % 1 ~= 0 or index < 1 or index > 6 then
+			return
+		end
+		if typeof(heroUid) ~= "string" or heroUid == "" or seenUids[heroUid] then
+			return
+		end
+		if not prof.Heroes[heroUid] then
+			return
+		end
+
+		seenUids[heroUid] = true
+		entryCount += 1
+	end
+
+	if entryCount < 1 or entryCount > 6 then
+		return
+	end
+
+	for index = 1, entryCount do
+		local heroUid = heroUids[index]
+		if not heroUid then
+			return
+		end
+		selectedUids[index] = heroUid
+	end
+
+	prof.Formation = selectedUids
+	ProfileService.SyncProfile(player)
+end
+
 function HeroService.LevelUpHero(player: Player, heroUid: string)
 	local prof = ProfileService.Get(player)
 	if not prof then

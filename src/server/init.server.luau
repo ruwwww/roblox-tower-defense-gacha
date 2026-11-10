@@ -95,6 +95,12 @@ remotes.ClaimAfkLoot.OnServerEvent:Connect(function(player)
 	IdleRewardService.ClaimAfkLoot(player)
 end)
 
+remotes.UpdateFormation.OnServerEvent:Connect(function(player: Player, heroUids: unknown)
+	if typeof(heroUids) == "table" then
+		HeroService.UpdateFormation(player, heroUids :: { string })
+	end
+end)
+
 remotes.RollGacha.OnServerEvent:Connect(function(player: Player, rollCount: unknown, paymentMethod: unknown)
 	if typeof(rollCount) == "number" and (paymentMethod == "Scrolls" or paymentMethod == "Diamonds") then
 		SummonService.RollGacha(player, rollCount, paymentMethod)

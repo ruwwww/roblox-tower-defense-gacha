@@ -9,7 +9,32 @@ local IdleRewardService = {
 	Remotes = {} :: { [string]: RemoteEvent },
 }
 
+type AfkRates = {
+	GoldPerMin: number,
+	ElixirPerMin: number,
+	ExpPerMin: number,
+}
+
+local STARTER_AFK_RATES: AfkRates = {
+	GoldPerMin = 25,
+	ElixirPerMin = 15,
+	ExpPerMin = 10,
+}
+
 local RNG = Random.new()
+
+local function GetAfkRates(highestClearedStage: string): AfkRates
+	if highestClearedStage == "1-0" then
+		return STARTER_AFK_RATES
+	end
+
+	local stage = StageData.Get(highestClearedStage)
+	if stage then
+		return stage.AfkRates
+	end
+
+	return STARTER_AFK_RATES
+end
 
 local GEAR_DROPS_BY_CHAPTER: { [number]: { string } } = {
 	[1] = { "iron_sword", "leather_tunic", "bronze_pendant", "leather_boots", "steel_saber", "chainmail_vest" },
@@ -29,8 +54,7 @@ function IdleRewardService.CalculatePendingRewards(player: Player)
 	local elapsedSec = math.clamp(now - prof.AfkLastClaimTime, 0, 43200) -- Max 12 hours
 	local elapsedMins = elapsedSec / 60
 
-	local stage = StageData.Get(prof.HighestClearedStage) or StageData.Get("1-1")
-	local rates = stage and stage.AfkRates or { GoldPerMin = 50, ElixirPerMin = 30, ExpPerMin = 20 }
+	local rates = GetAfkRates(prof.HighestClearedStage)
 
 	local goldEarned = math.floor(rates.GoldPerMin * elapsedMins)
 	local elixirEarned = math.floor(rates.ElixirPerMin * elapsedMins)
@@ -100,8 +124,7 @@ function IdleRewardService.FastAfkClaim(player: Player)
 		return
 	end
 
-	local stage = StageData.Get(prof.HighestClearedStage) or StageData.Get("1-1")
-	local rates = stage and stage.AfkRates or { GoldPerMin = 50, ElixirPerMin = 30, ExpPerMin = 20 }
+	local rates = GetAfkRates(prof.HighestClearedStage)
 
 	-- 120 Minutes instan!
 	local goldBonus = math.floor(rates.GoldPerMin * 120)
