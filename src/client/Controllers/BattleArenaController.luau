@@ -95,12 +95,30 @@ function BattleArenaController.Start3DBattle(data: any, onComplete: () -> ())
 	-- 1. Build Physical 3D Tile Board (Unmistakable Visual Differentiation)
 	local floorBase = Instance.new("Part")
 	floorBase.Name = "ArenaFloorBase"
-	floorBase.Size = Vector3.new(GRID_W * TILE_SIZE + 10, 2, GRID_H * TILE_SIZE + 10)
+	floorBase.Size = Vector3.new(GRID_W * TILE_SIZE + 24, 2, GRID_H * TILE_SIZE + 24)
 	floorBase.Position = ARENA_ORIGIN - Vector3.new(0, 1.5, 0)
 	floorBase.Anchored = true
 	floorBase.Material = Enum.Material.Concrete
 	floorBase.Color = Color3.fromRGB(18, 20, 26)
 	floorBase.Parent = arena
+
+	-- Perimeter safety railings so player can explore without falling
+	local function CreateRail(size: Vector3, pos: Vector3)
+		local rail = Instance.new("Part")
+		rail.Size = size
+		rail.Position = pos
+		rail.Anchored = true
+		rail.Material = Enum.Material.Glass
+		rail.Transparency = 0.5
+		rail.Color = Color3.fromRGB(80, 130, 180)
+		rail.Parent = arena
+	end
+	local halfW = (GRID_W * TILE_SIZE + 24) / 2
+	local halfH = (GRID_H * TILE_SIZE + 24) / 2
+	CreateRail(Vector3.new(halfW * 2, 4, 1.5), ARENA_ORIGIN + Vector3.new(0, 1.5, halfH))
+	CreateRail(Vector3.new(halfW * 2, 4, 1.5), ARENA_ORIGIN + Vector3.new(0, 1.5, -halfH))
+	CreateRail(Vector3.new(1.5, 4, halfH * 2), ARENA_ORIGIN + Vector3.new(halfW, 1.5, 0))
+	CreateRail(Vector3.new(1.5, 4, halfH * 2), ARENA_ORIGIN + Vector3.new(-halfW, 1.5, 0))
 
 	for y = 1, GRID_H do
 		for x = 1, GRID_W do
@@ -108,6 +126,7 @@ function BattleArenaController.Start3DBattle(data: any, onComplete: () -> ())
 			local tilePart = Instance.new("Part")
 			tilePart.Name = string.format("Tile_%d_%d", x, y)
 			tilePart.Anchored = true
+			tilePart.CanCollide = true
 
 			if tileType == "Path" then
 				-- Enemy Highway: Dark pavement with glowing orange guide stripe
@@ -192,14 +211,20 @@ function BattleArenaController.Start3DBattle(data: any, onComplete: () -> ())
 	crystalBase.Color = Color3.fromRGB(60, 220, 255)
 	crystalBase.Parent = arena
 
-	-- 2. Setup Top-Down Isometric Camera
-	local prevCameraType = Camera.CameraType
-	local prevCameraCFrame = Camera.CFrame
-	Camera.CameraType = Enum.CameraType.Scriptable
+	-- 2. Teleport Player to Arena & Unlock Free Camera / Exploration Movement
+	local character = LocalPlayer.Character
+	local hrp = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local prevPlayerCFrame = hrp and hrp.CFrame or CFrame.new(0, 3, 0)
+	if hrp then
+		local startSpawnPos = ARENA_ORIGIN + Vector3.new(0, 3, -(GRID_H * TILE_SIZE / 2 + 7))
+		hrp.CFrame = CFrame.lookAt(startSpawnPos, ARENA_ORIGIN)
+	end
 
-	local camTarget = ARENA_ORIGIN + Vector3.new(0, 0, 0)
-	local camOffset = Vector3.new(0, 75, -55)
-	Camera.CFrame = CFrame.lookAt(ARENA_ORIGIN + camOffset, camTarget)
+	Camera.CameraType = Enum.CameraType.Custom
+	local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+	if humanoid then
+		Camera.CameraSubject = humanoid
+	end
 
 	-- 3. In-Game Battle HUD Overlay
 	local playerGui = LocalPlayer:WaitForChild("PlayerGui")
@@ -339,8 +364,17 @@ function BattleArenaController.Start3DBattle(data: any, onComplete: () -> ())
 		if arena then
 			arena:Destroy()
 		end
-		Camera.CameraType = prevCameraType
-		Camera.CFrame = prevCameraCFrame
+
+		-- Return player character to Lobby
+		if hrp and prevPlayerCFrame then
+			hrp.CFrame = prevPlayerCFrame
+		end
+
+		Camera.CameraType = Enum.CameraType.Custom
+		local hum = character and character:FindFirstChildOfClass("Humanoid")
+		if hum then
+			Camera.CameraSubject = hum
+		end
 
 		if not isManualExit then
 			onComplete()
