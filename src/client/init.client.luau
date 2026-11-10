@@ -14,13 +14,9 @@ for _, child in ipairs(RemotesFolder:GetChildren()) do
 	end
 end
 
-local VisualsController = require(script:WaitForChild("Controllers"):WaitForChild("VisualsController"))
-local PlacementController = require(script:WaitForChild("Controllers"):WaitForChild("PlacementController"))
 local UIController = require(script:WaitForChild("Controllers"):WaitForChild("UIController"))
 
--- Initialize controllers
-VisualsController.Init()
-PlacementController.Init(remotes)
+-- Initialize UIController
 UIController.Init(remotes)
 
 -- Wire Remote Listeners
@@ -42,21 +38,25 @@ if remotes.NotifyMessage then
 	end)
 end
 
-if remotes.TowerFired then
-	remotes.TowerFired.OnClientEvent:Connect(function(towerId, origin, target, role, color)
-		VisualsController.OnTowerFired(towerId, origin, target, role, color)
+if remotes.BattleFinished then
+	remotes.BattleFinished.OnClientEvent:Connect(function(data)
+		UIController.OnBattleFinished(data)
 	end)
 end
 
-if remotes.EnemyDamaged then
-	remotes.EnemyDamaged.OnClientEvent:Connect(function(enemyId, damage, currentHp, maxHp, isCritical)
-		VisualsController.OnEnemyDamaged(enemyId, damage, currentHp, maxHp, isCritical)
-	end)
-end
-
-if remotes.EnemyDied then
-	remotes.EnemyDied.OnClientEvent:Connect(function(enemyId, position)
-		VisualsController.OnEnemyDied(enemyId, position)
+if remotes.OpenLobbyModal then
+	remotes.OpenLobbyModal.OnClientEvent:Connect(function(modalType)
+		if modalType == "Campaign" then
+			UIController.ToggleModal("CampaignModal")
+		elseif modalType == "Backpack" then
+			UIController.ToggleModal("BackpackModal")
+		elseif modalType == "Gacha" then
+			UIController.ToggleModal("SummonModal")
+		elseif modalType == "Blacksmith" then
+			UIController.ShowNotification("🔨 Blacksmith Forge: Equipment Enhancement unlocks at Chapter 2!", Color3.fromRGB(255, 180, 50))
+		elseif modalType == "Arena" then
+			UIController.ShowNotification("🏆 PvP Arena: Unlocks at Chapter 3!", Color3.fromRGB(255, 180, 50))
+		end
 	end)
 end
 
@@ -65,4 +65,4 @@ if remotes.ClientReady then
 	remotes.ClientReady:FireServer()
 end
 
-print("[Client] Tower Defense x Gacha Client Controllers loaded successfully.")
+print("[Client] Arknights x Idle RPG Client loaded successfully.")

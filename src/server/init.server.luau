@@ -1,11 +1,12 @@
 --!strict
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
 local Players = game:GetService("Players")
 
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Network = require(Shared:WaitForChild("Network"))
 
--- 1. Create RemoteEvents container FIRST so client never hangs
+-- 1. Create RemoteEvents container
 local remotesFolder = ReplicatedStorage:FindFirstChild("Remotes")
 if not remotesFolder then
 	remotesFolder = Instance.new("Folder")
@@ -26,63 +27,112 @@ for _, eventName in pairs(Network.Events) do
 	end
 end
 
--- 2. Setup Map and Arena in Workspace immediately
-local MapService = require(script:WaitForChild("Services"):WaitForChild("MapService"))
-MapService.SetupMap()
+-- 2. Setup 3D Town Hub in Workspace
+local LobbyService = require(script:WaitForChild("Services"):WaitForChild("LobbyService"))
+LobbyService.SetupLobby()
 
 -- 3. Load & Initialize Game Services
-local GachaService = require(script:WaitForChild("Services"):WaitForChild("GachaService"))
-local WaveService = require(script:WaitForChild("Services"):WaitForChild("WaveService"))
-local CombatService = require(script:WaitForChild("Services"):WaitForChild("CombatService"))
+local ProfileService = require(script:WaitForChild("Services"):WaitForChild("ProfileService"))
+local IdleRewardService = require(script:WaitForChild("Services"):WaitForChild("IdleRewardService"))
+local HeroService = require(script:WaitForChild("Services"):WaitForChild("HeroService"))
+local SummonService = require(script:WaitForChild("Services"):WaitForChild("SummonService"))
+local CampaignService = require(script:WaitForChild("Services"):WaitForChild("CampaignService"))
 
-GachaService.Init(remotes)
-WaveService.Init(remotes)
-CombatService.Init(remotes)
+ProfileService.Init(remotes)
+IdleRewardService.Init(remotes)
+HeroService.Init(remotes)
+SummonService.Init(remotes)
+CampaignService.Init(remotes)
 
--- 4. Connect Inbound Client Remotes
+-- 4. Connect ClickDetectors on 3D Lobby Buildings
+task.defer(function()
+	local town = Workspace:WaitForChild("LobbyTown", 5)
+	if not town then
+		return
+	end
+
+	-- Chest Click -> Claim AFK Loot
+	local chest = town:WaitForChild("AfkLootChest", 5) :: Part?
+	if chest then
+		local click = chest:FindFirstChildOfClass("ClickDetector")
+		if click then
+			click.MouseClick:Connect(function(player)
+				IdleRewardService.ClaimAfkLoot(player)
+			end)
+		end
+	end
+
+	-- Altar / Gate Clicks -> Open UI on Client
+	local buildingMap = {
+		SummonAltar = "Gacha",
+		CampaignGate = "Campaign",
+		HeroAltar = "Backpack",
+		BlacksmithForge = "Blacksmith",
+		ArenaGate = "Arena",
+	}
+
+	for modelName, modalType in pairs(buildingMap) do
+		local m = town:FindFirstChild(modelName)
+		if m and m:IsA("Model") and m.PrimaryPart then
+			local click = m.PrimaryPart:FindFirstChildOfClass("ClickDetector")
+			if click then
+				click.MouseClick:Connect(function(player)
+					if remotes.OpenLobbyModal then
+						remotes.OpenLobbyModal:FireClient(player, modalType)
+					end
+				end)
+			end
+		end
+	end
+end)
+
+-- 5. Connect Inbound Client Remotes
 remotes.ClientReady.OnServerEvent:Connect(function(player)
-	GachaService.SyncState(player)
-	WaveService.BroadcastWaveState()
+	ProfileService.SyncProfile(player)
 end)
 
-remotes.PlaceTower.OnServerEvent:Connect(function(player, unitId: any, position: any)
-	if typeof(unitId) == "string" and typeof(position) == "Vector3" then
-		CombatService.PlaceTower(player, unitId, position)
+remotes.ClaimAfkLoot.OnServerEvent:Connect(function(player)
+	IdleRewardService.ClaimAfkLoot(player)
+end)
+
+remotes.RollGacha.OnServerEvent:Connect(function(player: Player, rollCount: unknown, paymentMethod: unknown)
+	if typeof(rollCount) == "number" and (paymentMethod == "Scrolls" or paymentMethod == "Diamonds") then
+		SummonService.RollGacha(player, rollCount, paymentMethod)
 	end
 end)
 
-remotes.UpgradeTower.OnServerEvent:Connect(function(player, towerId: any)
-	if typeof(towerId) == "string" then
-		CombatService.UpgradeTower(player, towerId)
+remotes.FastAfkClaim.OnServerEvent:Connect(function(player)
+	IdleRewardService.FastAfkClaim(player)
+end)
+
+remotes.LevelUpHero.OnServerEvent:Connect(function(player, heroUid: any)
+	if typeof(heroUid) == "string" then
+		HeroService.LevelUpHero(player, heroUid)
 	end
 end)
 
-remotes.SellTower.OnServerEvent:Connect(function(player, towerId: any)
-	if typeof(towerId) == "string" then
-		CombatService.SellTower(player, towerId)
+remotes.StarUpHero.OnServerEvent:Connect(function(player, targetUid: any, sacrificeUids: any)
+	if typeof(targetUid) == "string" and typeof(sacrificeUids) == "table" then
+		HeroService.StarUpHero(player, targetUid, sacrificeUids)
 	end
 end)
 
-remotes.SetTargetMode.OnServerEvent:Connect(function(player, towerId: any, mode: any)
-	if typeof(towerId) == "string" and typeof(mode) == "string" then
-		CombatService.SetTargetMode(player, towerId, mode)
+remotes.EquipGear.OnServerEvent:Connect(function(player, heroUid: any, slot: any, gearUid: any)
+	if typeof(heroUid) == "string" and typeof(slot) == "string" and typeof(gearUid) == "string" then
+		HeroService.EquipGear(player, heroUid, slot, gearUid)
 	end
 end)
 
-remotes.RollGacha.OnServerEvent:Connect(function(player, bannerId: any, isMulti: any)
-	if typeof(bannerId) == "string" and typeof(isMulti) == "boolean" then
-		GachaService.RollGacha(player, bannerId, isMulti)
+remotes.UnequipGear.OnServerEvent:Connect(function(player, heroUid: any, slot: any)
+	if typeof(heroUid) == "string" and typeof(slot) == "string" then
+		HeroService.UnequipGear(player, heroUid, slot)
 	end
 end)
 
-remotes.EquipUnit.OnServerEvent:Connect(function(player, unitId: any, slotIndex: any)
-	if typeof(unitId) == "string" and typeof(slotIndex) == "number" then
-		GachaService.EquipUnit(player, unitId, slotIndex)
+remotes.StartBattle.OnServerEvent:Connect(function(player, stageId: any, isSkip: any)
+	if typeof(stageId) == "string" and typeof(isSkip) == "boolean" then
+		CampaignService.StartBattle(player, stageId, isSkip)
 	end
 end)
 
-remotes.StartWaveVote.OnServerEvent:Connect(function(_player)
-	WaveService.StartNextWave()
-end)
-
-print("[Server] Tower Defense x Gacha Systems fully initialized and Map generated.")
+print("[Server] Arknights x Idle RPG Hybrid Systems fully initialized.")

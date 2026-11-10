@@ -2,20 +2,30 @@
 local Network = {
 	Events = {
 		ClientReady = "ClientReady",
-		PlaceTower = "PlaceTower",
-		UpgradeTower = "UpgradeTower",
-		SellTower = "SellTower",
-		SetTargetMode = "SetTargetMode",
-		RollGacha = "RollGacha",
-		EquipUnit = "EquipUnit",
-		StartWaveVote = "StartWaveVote",
 		StateSync = "StateSync",
-		TowerFired = "TowerFired",
-		EnemyDamaged = "EnemyDamaged",
-		EnemySpawned = "EnemySpawned",
-		EnemyDied = "EnemyDied",
-		GachaResult = "GachaResult",
 		NotifyMessage = "NotifyMessage",
+
+		-- Gacha
+		RollGacha = "RollGacha",
+		GachaResult = "GachaResult",
+
+		-- AFK Loot
+		ClaimAfkLoot = "ClaimAfkLoot",
+		FastAfkClaim = "FastAfkClaim",
+
+		-- Hero & Equipment
+		LevelUpHero = "LevelUpHero",
+		StarUpHero = "StarUpHero",
+		EquipGear = "EquipGear",
+		UnequipGear = "UnequipGear",
+		UpdateFormation = "UpdateFormation",
+
+		-- Campaign & Battle
+		StartBattle = "StartBattle",
+		BattleFinished = "BattleFinished",
+
+		-- World Interaction
+		OpenLobbyModal = "OpenLobbyModal",
 	}
 }
 
