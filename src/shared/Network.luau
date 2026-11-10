@@ -35,6 +35,10 @@ local Network = {
 		-- Events & Monetization
 		PurchaseStarterPack = "PurchaseStarterPack",
 		PurchaseEventOffer = "PurchaseEventOffer",
+		PurchaseMonthlyCard = "PurchaseMonthlyCard",
+		ClaimMonthlyCardDaily = "ClaimMonthlyCardDaily",
+		PurchaseGrowthFund = "PurchaseGrowthFund",
+		ClaimGrowthFund = "ClaimGrowthFund",
 
 		-- World Interaction
 		OpenLobbyModal = "OpenLobbyModal",

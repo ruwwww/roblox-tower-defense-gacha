@@ -141,6 +141,24 @@ remotes.PurchaseEventOffer.OnServerEvent:Connect(function(player: Player, offerI
 	end
 end)
 
+remotes.PurchaseMonthlyCard.OnServerEvent:Connect(function(player: Player)
+	ProfileService.PurchaseMonthlyCard(player)
+end)
+
+remotes.ClaimMonthlyCardDaily.OnServerEvent:Connect(function(player: Player)
+	ProfileService.ClaimMonthlyCardDaily(player)
+end)
+
+remotes.PurchaseGrowthFund.OnServerEvent:Connect(function(player: Player)
+	ProfileService.PurchaseGrowthFund(player)
+end)
+
+remotes.ClaimGrowthFund.OnServerEvent:Connect(function(player: Player, chapterNum: unknown)
+	if typeof(chapterNum) == "number" then
+		ProfileService.ClaimGrowthFund(player, chapterNum)
+	end
+end)
+
 remotes.FastAfkClaim.OnServerEvent:Connect(function(player)
 	IdleRewardService.FastAfkClaim(player)
 end)

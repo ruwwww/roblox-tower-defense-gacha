@@ -1740,18 +1740,18 @@ function UIController.BuildEventsModal()
 	stroke.Parent = modal
 
 	local header = Instance.new("TextLabel")
-	header.Size = UDim2.new(1, 0, 0, 48)
+	header.Size = UDim2.new(1, 0, 0, 44)
 	header.BackgroundTransparency = 1
 	header.TextColor3 = Color3.fromRGB(255, 215, 235)
 	header.TextScaled = true
 	header.Font = Enum.Font.GothamBlack
-	header.Text = "🎉 GRAND LAUNCH EVENTS & STARTER BUNDLES"
+	header.Text = "🎉 GRAND LAUNCH EVENTS & PRIVILEGE OFFERS"
 	header.ZIndex = 16
 	header.Parent = modal
 
 	local closeBtn = Instance.new("TextButton")
-	closeBtn.Size = UDim2.new(0, 34, 0, 34)
-	closeBtn.Position = UDim2.new(1, -40, 0, 7)
+	closeBtn.Size = UDim2.new(0, 32, 0, 32)
+	closeBtn.Position = UDim2.new(1, -38, 0, 6)
 	closeBtn.BackgroundColor3 = Color3.fromRGB(220, 50, 60)
 	closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 	closeBtn.Text = "X"
@@ -1768,23 +1768,61 @@ function UIController.BuildEventsModal()
 		modal.Visible = false
 	end)
 
+	-- Subtabs: [ 🌟 Bundles ] [ 👑 Monthly VIP ] [ 📈 Growth Fund ] [ 📅 7-Day ]
+	local tabNav = Instance.new("Frame")
+	tabNav.Size = UDim2.new(0.92, 0, 0, 36)
+	tabNav.Position = UDim2.new(0.04, 0, 0, 48)
+	tabNav.BackgroundTransparency = 1
+	tabNav.ZIndex = 16
+	tabNav.Parent = modal
+
+	local tLayout = Instance.new("UIListLayout")
+	tLayout.FillDirection = Enum.FillDirection.Horizontal
+	tLayout.Padding = UDim.new(0, 8)
+	tLayout.Parent = tabNav
+
+	local function CreateSubTab(text: string, isActive: boolean): TextButton
+		local btn = Instance.new("TextButton")
+		btn.Size = UDim2.new(0, 130, 1, 0)
+		btn.BackgroundColor3 = isActive and Color3.fromRGB(200, 60, 120) or Color3.fromRGB(36, 40, 55)
+		btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+		btn.TextScaled = true
+		btn.Font = Enum.Font.GothamBold
+		btn.Text = text
+		btn.ZIndex = 17
+		btn.Parent = tabNav
+
+		local tc = Instance.new("UICorner")
+		tc.CornerRadius = UDim.new(0, 8)
+		tc.Parent = btn
+		return btn
+	end
+
+	local tabBundlesBtn = CreateSubTab("🌟 Bundles", true)
+	local tabVipBtn = CreateSubTab("👑 Monthly VIP", false)
+	local tabFundBtn = CreateSubTab("📈 Growth Fund", false)
+	local tabCarnivalBtn = CreateSubTab("📅 7-Day", false)
+
+	-- 1. BUNDLES CONTAINER
 	local scroll = Instance.new("ScrollingFrame")
-	scroll.Size = UDim2.new(0.92, 0, 0.85, 0)
-	scroll.Position = UDim2.new(0.04, 0, 0, 56)
+	scroll.Name = "BundlesScroll"
+	scroll.Size = UDim2.new(0.92, 0, 0.82, 0)
+	scroll.Position = UDim2.new(0.04, 0, 0, 92)
 	scroll.BackgroundTransparency = 1
 	scroll.BorderSizePixel = 0
 	scroll.AutomaticCanvasSize = Enum.AutomaticSize.Y
 	scroll.ZIndex = 16
 	scroll.Parent = modal
+	UIController.Elements.EventBundlesScroll = scroll
 
 	local sLayout = Instance.new("UIListLayout")
-	sLayout.Padding = UDim.new(0, 14)
+	sLayout.Padding = UDim.new(0, 12)
 	sLayout.Parent = scroll
 
 	-- Banner 1: Novice Headstart Bundle (Monetization Offer)
 	local starterCard = Instance.new("Frame")
 	starterCard.Name = "StarterBundleCard"
-	starterCard.Size = UDim2.new(1, 0, 0, 155)
+	starterCard.Size = UDim2.new(1, 0, 0, 140)
 	starterCard.BackgroundColor3 = Color3.fromRGB(36, 26, 44)
 	starterCard.ZIndex = 17
 	starterCard.Parent = scroll
@@ -1848,7 +1886,7 @@ function UIController.BuildEventsModal()
 	-- Banner 2: Elite Commander Supply (Diamond Purchase)
 	local scrollCard = Instance.new("Frame")
 	scrollCard.Name = "ScrollBundleCard"
-	scrollCard.Size = UDim2.new(1, 0, 0, 150)
+	scrollCard.Size = UDim2.new(1, 0, 0, 140)
 	scrollCard.BackgroundColor3 = Color3.fromRGB(32, 24, 45)
 	scrollCard.ZIndex = 17
 	scrollCard.Parent = scroll
@@ -1912,7 +1950,7 @@ function UIController.BuildEventsModal()
 	-- Banner 3: Blacksmith Arsenal Pack (Diamond Purchase)
 	local arsenalCard = Instance.new("Frame")
 	arsenalCard.Name = "ArsenalBundleCard"
-	arsenalCard.Size = UDim2.new(1, 0, 0, 150)
+	arsenalCard.Size = UDim2.new(1, 0, 0, 140)
 	arsenalCard.BackgroundColor3 = Color3.fromRGB(24, 30, 42)
 	arsenalCard.ZIndex = 17
 	arsenalCard.Parent = scroll
@@ -1973,40 +2011,453 @@ function UIController.BuildEventsModal()
 		end
 	end)
 
-	-- Banner 4: 7-Day Login Event Preview
-	local loginCard = Instance.new("Frame")
-	loginCard.Size = UDim2.new(1, 0, 0, 105)
-	loginCard.BackgroundColor3 = Color3.fromRGB(28, 32, 45)
-	loginCard.ZIndex = 17
-	loginCard.Parent = scroll
+	-- Banner 4: AFK Time-Warp Hourglass
+	local timeWarpCard = Instance.new("Frame")
+	timeWarpCard.Name = "TimeWarpCard"
+	timeWarpCard.Size = UDim2.new(1, 0, 0, 135)
+	timeWarpCard.BackgroundColor3 = Color3.fromRGB(30, 36, 40)
+	timeWarpCard.ZIndex = 17
+	timeWarpCard.Parent = scroll
 
-	local lcCorn = Instance.new("UICorner")
-	lcCorn.CornerRadius = UDim.new(0, 12)
-	lcCorn.Parent = loginCard
+	local twcCorn = Instance.new("UICorner")
+	twcCorn.CornerRadius = UDim.new(0, 12)
+	twcCorn.Parent = timeWarpCard
 
-	local lcTitle = Instance.new("TextLabel")
-	lcTitle.Size = UDim2.new(0.92, 0, 0.32, 0)
-	lcTitle.Position = UDim2.new(0.04, 0, 0.1, 0)
-	lcTitle.BackgroundTransparency = 1
-	lcTitle.TextColor3 = Color3.fromRGB(100, 220, 255)
-	lcTitle.TextScaled = true
-	lcTitle.Font = Enum.Font.GothamBold
-	lcTitle.TextXAlignment = Enum.TextXAlignment.Left
-	lcTitle.Text = "📅 7-DAY LOGIN CARNIVAL"
-	lcTitle.ZIndex = 18
-	lcTitle.Parent = loginCard
+	local twcStroke = Instance.new("UIStroke")
+	twcStroke.Color = Color3.fromRGB(80, 200, 140)
+	twcStroke.Thickness = 2
+	twcStroke.Parent = timeWarpCard
 
-	local lcDesc = Instance.new("TextLabel")
-	lcDesc.Size = UDim2.new(0.92, 0, 0.48, 0)
-	lcDesc.Position = UDim2.new(0.04, 0, 0.44, 0)
-	lcDesc.BackgroundTransparency = 1
-	lcDesc.TextColor3 = Color3.fromRGB(200, 215, 230)
-	lcDesc.TextScaled = true
-	lcDesc.Font = Enum.Font.Gotham
-	lcDesc.TextXAlignment = Enum.TextXAlignment.Left
-	lcDesc.Text = "Log in every day to claim free Diamonds, Basic & Elite Scrolls, and on Day 7 claim your free 5★ Hero Selector!"
-	lcDesc.ZIndex = 18
-	lcDesc.Parent = loginCard
+	local twTitle = Instance.new("TextLabel")
+	twTitle.Size = UDim2.new(0.65, 0, 0.22, 0)
+	twTitle.Position = UDim2.new(0.04, 0, 0.08, 0)
+	twTitle.BackgroundTransparency = 1
+	twTitle.TextColor3 = Color3.fromRGB(120, 240, 180)
+	twTitle.TextScaled = true
+	twTitle.Font = Enum.Font.GothamBlack
+	twTitle.TextXAlignment = Enum.TextXAlignment.Left
+	twTitle.Text = "⏳ AFK TIME-WARP HOURGLASS (240 MINS)"
+	twTitle.ZIndex = 18
+	twTitle.Parent = timeWarpCard
+
+	local twContent = Instance.new("TextLabel")
+	twContent.Size = UDim2.new(0.65, 0, 0.6, 0)
+	twContent.Position = UDim2.new(0.04, 0, 0.32, 0)
+	twContent.BackgroundTransparency = 1
+	twContent.TextColor3 = Color3.fromRGB(215, 235, 225)
+	twContent.TextScaled = true
+	twContent.Font = Enum.Font.Gotham
+	twContent.TextXAlignment = Enum.TextXAlignment.Left
+	twContent.Text = "Instantly Fast-Forward Time:\n✦ Claim 4 Hours (240 mins) of AFK Gold & Elixir loot instantly!\n✦ Multiplied by your current cleared stage rates"
+	twContent.ZIndex = 18
+	twContent.Parent = timeWarpCard
+
+	local twBtn = Instance.new("TextButton")
+	twBtn.Size = UDim2.new(0.26, 0, 0.45, 0)
+	twBtn.Position = UDim2.new(0.70, 0, 0.28, 0)
+	twBtn.BackgroundColor3 = Color3.fromRGB(40, 160, 110)
+	twBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	twBtn.TextScaled = true
+	twBtn.Font = Enum.Font.GothamBlack
+	twBtn.Text = "💎 BUY (250 💎)"
+	twBtn.ZIndex = 18
+	twBtn.Parent = timeWarpCard
+
+	local twbCorn = Instance.new("UICorner")
+	twbCorn.CornerRadius = UDim.new(0, 10)
+	twbCorn.Parent = twBtn
+
+	twBtn.MouseButton1Click:Connect(function()
+		if UIController.Remotes.PurchaseEventOffer then
+			UIController.Remotes.PurchaseEventOffer:FireServer("time_warp")
+		end
+	end)
+
+	-- Banner 5: Hero Awakening Shard Chest
+	local shardCard = Instance.new("Frame")
+	shardCard.Name = "ShardCard"
+	shardCard.Size = UDim2.new(1, 0, 0, 135)
+	shardCard.BackgroundColor3 = Color3.fromRGB(38, 30, 26)
+	shardCard.ZIndex = 17
+	shardCard.Parent = scroll
+
+	local shcCorn = Instance.new("UICorner")
+	shcCorn.CornerRadius = UDim.new(0, 12)
+	shcCorn.Parent = shardCard
+
+	local shcStroke = Instance.new("UIStroke")
+	shcStroke.Color = Color3.fromRGB(240, 140, 40)
+	shcStroke.Thickness = 2
+	shcStroke.Parent = shardCard
+
+	local shTitle = Instance.new("TextLabel")
+	shTitle.Size = UDim2.new(0.65, 0, 0.22, 0)
+	shTitle.Position = UDim2.new(0.04, 0, 0.08, 0)
+	shTitle.BackgroundTransparency = 1
+	shTitle.TextColor3 = Color3.fromRGB(255, 180, 80)
+	shTitle.TextScaled = true
+	shTitle.Font = Enum.Font.GothamBlack
+	shTitle.TextXAlignment = Enum.TextXAlignment.Left
+	shTitle.Text = "⭐ HERO AWAKENING & ASCENSION CHEST"
+	shTitle.ZIndex = 18
+	shTitle.Parent = shardCard
+
+	local shContent = Instance.new("TextLabel")
+	shContent.Size = UDim2.new(0.65, 0, 0.6, 0)
+	shContent.Position = UDim2.new(0.04, 0, 0.32, 0)
+	shContent.BackgroundTransparency = 1
+	shContent.TextColor3 = Color3.fromRGB(245, 225, 215)
+	shContent.TextScaled = true
+	shContent.Font = Enum.Font.Gotham
+	shContent.TextXAlignment = Enum.TextXAlignment.Left
+	shContent.Text = "Rapid Ascension Material Pack:\n✦ 2x Guaranteed 3★ Duplicates (Bastian & Crimson)\n✦ +50,000 Hero Elixir for immediate Star-Up!"
+	shContent.ZIndex = 18
+	shContent.Parent = shardCard
+
+	local shBtn = Instance.new("TextButton")
+	shBtn.Size = UDim2.new(0.26, 0, 0.45, 0)
+	shBtn.Position = UDim2.new(0.70, 0, 0.28, 0)
+	shBtn.BackgroundColor3 = Color3.fromRGB(210, 110, 30)
+	shBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	shBtn.TextScaled = true
+	shBtn.Font = Enum.Font.GothamBlack
+	shBtn.Text = "💎 BUY (1,200 💎)"
+	shBtn.ZIndex = 18
+	shBtn.Parent = shardCard
+
+	local shbCorn = Instance.new("UICorner")
+	shbCorn.CornerRadius = UDim.new(0, 10)
+	shbCorn.Parent = shBtn
+
+	shBtn.MouseButton1Click:Connect(function()
+		if UIController.Remotes.PurchaseEventOffer then
+			UIController.Remotes.PurchaseEventOffer:FireServer("shard_chest")
+		end
+	end)
+
+	-- 2. MONTHLY VIP CONTAINER
+	local vipFrame = Instance.new("Frame")
+	vipFrame.Name = "VipFrame"
+	vipFrame.Size = UDim2.new(0.92, 0, 0.82, 0)
+	vipFrame.Position = UDim2.new(0.04, 0, 0, 92)
+	vipFrame.BackgroundColor3 = Color3.fromRGB(28, 22, 38)
+	vipFrame.Visible = false
+	vipFrame.ZIndex = 16
+	vipFrame.Parent = modal
+	UIController.Elements.EventVipFrame = vipFrame
+
+	local vfc = Instance.new("UICorner")
+	vfc.CornerRadius = UDim.new(0, 14)
+	vfc.Parent = vipFrame
+
+	local vfs = Instance.new("UIStroke")
+	vfs.Color = Color3.fromRGB(255, 215, 60)
+	vfs.Thickness = 2.5
+	vfs.Parent = vipFrame
+
+	local vipTitle = Instance.new("TextLabel")
+	vipTitle.Size = UDim2.new(0.9, 0, 0.12, 0)
+	vipTitle.Position = UDim2.new(0.05, 0, 0.05, 0)
+	vipTitle.BackgroundTransparency = 1
+	vipTitle.TextColor3 = Color3.fromRGB(255, 220, 80)
+	vipTitle.TextScaled = true
+	vipTitle.Font = Enum.Font.GothamBlack
+	vipTitle.Text = "👑 30-DAY MONTHLY PRIVILEGE CARD"
+	vipTitle.ZIndex = 17
+	vipTitle.Parent = vipFrame
+
+	local vipStatusLbl = Instance.new("TextLabel")
+	vipStatusLbl.Size = UDim2.new(0.9, 0, 0.08, 0)
+	vipStatusLbl.Position = UDim2.new(0.05, 0, 0.18, 0)
+	vipStatusLbl.BackgroundTransparency = 1
+	vipStatusLbl.TextColor3 = Color3.fromRGB(150, 240, 180)
+	vipStatusLbl.TextScaled = true
+	vipStatusLbl.Font = Enum.Font.GothamBold
+	vipStatusLbl.Text = "Status: Inactive"
+	vipStatusLbl.ZIndex = 17
+	vipStatusLbl.Parent = vipFrame
+	UIController.Elements.VipStatusLbl = vipStatusLbl
+
+	local vipDesc = Instance.new("TextLabel")
+	vipDesc.Size = UDim2.new(0.9, 0, 0.42, 0)
+	vipDesc.Position = UDim2.new(0.05, 0, 0.28, 0)
+	vipDesc.BackgroundTransparency = 1
+	vipDesc.TextColor3 = Color3.fromRGB(230, 235, 245)
+	vipDesc.TextScaled = true
+	vipDesc.Font = Enum.Font.Gotham
+	vipDesc.Text = "Exclusive Commander Benefits:\n✦ 100 💎 Diamonds + 1x Elite Summon Scroll sent to Mailbox daily!\n✦ Total value over 30 days: 3,000 💎 + 30x Elite Summon Scrolls!\n✦ Permanent +15% Boost to all AFK Gold & Elixir loot!"
+	vipDesc.ZIndex = 17
+	vipDesc.Parent = vipFrame
+
+	local buyVipBtn = Instance.new("TextButton")
+	buyVipBtn.Size = UDim2.new(0.42, 0, 0, 48)
+	buyVipBtn.Position = UDim2.new(0.05, 0, 0.78, 0)
+	buyVipBtn.BackgroundColor3 = Color3.fromRGB(220, 150, 40)
+	buyVipBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	buyVipBtn.TextScaled = true
+	buyVipBtn.Font = Enum.Font.GothamBlack
+	buyVipBtn.Text = "👑 ACTIVATE (R$ 199)"
+	buyVipBtn.ZIndex = 18
+	buyVipBtn.Parent = vipFrame
+	UIController.Elements.BuyVipBtn = buyVipBtn
+
+	local bvc = Instance.new("UICorner")
+	bvc.CornerRadius = UDim.new(0, 10)
+	bvc.Parent = buyVipBtn
+
+	buyVipBtn.MouseButton1Click:Connect(function()
+		if UIController.Remotes.PurchaseMonthlyCard then
+			UIController.Remotes.PurchaseMonthlyCard:FireServer()
+		end
+	end)
+
+	local claimVipDailyBtn = Instance.new("TextButton")
+	claimVipDailyBtn.Size = UDim2.new(0.42, 0, 0, 48)
+	claimVipDailyBtn.Position = UDim2.new(0.53, 0, 0.78, 0)
+	claimVipDailyBtn.BackgroundColor3 = Color3.fromRGB(45, 175, 75)
+	claimVipDailyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	claimVipDailyBtn.TextScaled = true
+	claimVipDailyBtn.Font = Enum.Font.GothamBold
+	claimVipDailyBtn.Text = "🎁 CLAIM DAILY VIP"
+	claimVipDailyBtn.ZIndex = 18
+	claimVipDailyBtn.Parent = vipFrame
+	UIController.Elements.ClaimVipDailyBtn = claimVipDailyBtn
+
+	local cvc = Instance.new("UICorner")
+	cvc.CornerRadius = UDim.new(0, 10)
+	cvc.Parent = claimVipDailyBtn
+
+	claimVipDailyBtn.MouseButton1Click:Connect(function()
+		if UIController.Remotes.ClaimMonthlyCardDaily then
+			UIController.Remotes.ClaimMonthlyCardDaily:FireServer()
+		end
+	end)
+
+	-- 3. GROWTH FUND CONTAINER
+	local fundFrame = Instance.new("ScrollingFrame")
+	fundFrame.Name = "GrowthFundFrame"
+	fundFrame.Size = UDim2.new(0.92, 0, 0.82, 0)
+	fundFrame.Position = UDim2.new(0.04, 0, 0, 92)
+	fundFrame.BackgroundTransparency = 1
+	fundFrame.BorderSizePixel = 0
+	fundFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	fundFrame.Visible = false
+	fundFrame.ZIndex = 16
+	fundFrame.Parent = modal
+	UIController.Elements.EventFundFrame = fundFrame
+
+	local fLayout = Instance.new("UIListLayout")
+	fLayout.Padding = UDim.new(0, 12)
+	fLayout.Parent = fundFrame
+
+	-- Growth Fund Header Card
+	local fundHeaderCard = Instance.new("Frame")
+	fundHeaderCard.Size = UDim2.new(1, 0, 0, 110)
+	fundHeaderCard.BackgroundColor3 = Color3.fromRGB(28, 35, 52)
+	fundHeaderCard.ZIndex = 17
+	fundHeaderCard.Parent = fundFrame
+
+	local fhc = Instance.new("UICorner")
+	fhc.CornerRadius = UDim.new(0, 12)
+	fhc.Parent = fundHeaderCard
+
+	local fhs = Instance.new("UIStroke")
+	fhs.Color = Color3.fromRGB(100, 200, 255)
+	fhs.Thickness = 2
+	fhs.Parent = fundHeaderCard
+
+	local fht = Instance.new("TextLabel")
+	fht.Size = UDim2.new(0.65, 0, 0.35, 0)
+	fht.Position = UDim2.new(0.04, 0, 0.12, 0)
+	fht.BackgroundTransparency = 1
+	fht.TextColor3 = Color3.fromRGB(255, 220, 90)
+	fht.TextScaled = true
+	fht.Font = Enum.Font.GothamBlack
+	fht.TextXAlignment = Enum.TextXAlignment.Left
+	fht.Text = "📈 CHAPTER GROWTH FUND (UP TO 12,500 💎)"
+	fht.ZIndex = 18
+	fht.Parent = fundHeaderCard
+	UIController.Elements.FundHeaderTitle = fht
+
+	local fhd = Instance.new("TextLabel")
+	fhd.Size = UDim2.new(0.65, 0, 0.45, 0)
+	fhd.Position = UDim2.new(0.04, 0, 0.48, 0)
+	fhd.BackgroundTransparency = 1
+	fhd.TextColor3 = Color3.fromRGB(210, 230, 255)
+	fhd.TextScaled = true
+	fhd.Font = Enum.Font.Gotham
+	fhd.TextXAlignment = Enum.TextXAlignment.Left
+	fhd.Text = "Conquer chapter climaxes to claim massive Diamond bundles!"
+	fhd.ZIndex = 18
+	fhd.Parent = fundHeaderCard
+
+	local unlockFundBtn = Instance.new("TextButton")
+	unlockFundBtn.Size = UDim2.new(0.26, 0, 0.55, 0)
+	unlockFundBtn.Position = UDim2.new(0.70, 0, 0.22, 0)
+	unlockFundBtn.BackgroundColor3 = Color3.fromRGB(45, 140, 220)
+	unlockFundBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+	unlockFundBtn.TextScaled = true
+	unlockFundBtn.Font = Enum.Font.GothamBlack
+	unlockFundBtn.Text = "UNLOCK (R$ 249)"
+	unlockFundBtn.ZIndex = 18
+	unlockFundBtn.Parent = fundHeaderCard
+	UIController.Elements.UnlockFundBtn = unlockFundBtn
+
+	local ufc = Instance.new("UICorner")
+	ufc.CornerRadius = UDim.new(0, 10)
+	ufc.Parent = unlockFundBtn
+
+	unlockFundBtn.MouseButton1Click:Connect(function()
+		if UIController.Remotes.PurchaseGrowthFund then
+			UIController.Remotes.PurchaseGrowthFund:FireServer()
+		end
+	end)
+
+	-- Chapter Fund Milestones 1 to 5
+	local FUND_TIERS = {
+		{ Chap = 1, Diamonds = 1500, Title = "Chapter 1: The Outskirts (Stage 1-10)" },
+		{ Chap = 2, Diamonds = 2000, Title = "Chapter 2: Whispering Canyon (Stage 2-10)" },
+		{ Chap = 3, Diamonds = 2500, Title = "Chapter 3: Molten Stronghold (Stage 3-10)" },
+		{ Chap = 4, Diamonds = 3000, Title = "Chapter 4: Glacial Pass (Stage 4-10)" },
+		{ Chap = 5, Diamonds = 3500, Title = "Chapter 5: Abyssal Citadel (Stage 5-10)" },
+	}
+
+	for _, tier in ipairs(FUND_TIERS) do
+		local mCard = Instance.new("Frame")
+		mCard.Name = "FundTier_" .. tier.Chap
+		mCard.Size = UDim2.new(1, 0, 0, 75)
+		mCard.BackgroundColor3 = Color3.fromRGB(24, 28, 38)
+		mCard.ZIndex = 17
+		mCard.Parent = fundFrame
+
+		local mcCorn = Instance.new("UICorner")
+		mcCorn.CornerRadius = UDim.new(0, 10)
+		mcCorn.Parent = mCard
+
+		local mt = Instance.new("TextLabel")
+		mt.Size = UDim2.new(0.65, 0, 0.45, 0)
+		mt.Position = UDim2.new(0.04, 0, 0.12, 0)
+		mt.BackgroundTransparency = 1
+		mt.TextColor3 = Color3.fromRGB(255, 255, 255)
+		mt.TextScaled = true
+		mt.Font = Enum.Font.GothamBold
+		mt.TextXAlignment = Enum.TextXAlignment.Left
+		mt.Text = tier.Title
+		mt.ZIndex = 18
+		mt.Parent = mCard
+
+		local md = Instance.new("TextLabel")
+		md.Size = UDim2.new(0.65, 0, 0.35, 0)
+		md.Position = UDim2.new(0.04, 0, 0.55, 0)
+		md.BackgroundTransparency = 1
+		md.TextColor3 = Color3.fromRGB(100, 220, 255)
+		md.TextScaled = true
+		md.Font = Enum.Font.GothamBold
+		md.TextXAlignment = Enum.TextXAlignment.Left
+		md.Text = string.format("Reward: +%d 💎 Diamonds", tier.Diamonds)
+		md.ZIndex = 18
+		md.Parent = mCard
+
+		local clBtn = Instance.new("TextButton")
+		clBtn.Name = "ClaimFundBtn"
+		clBtn.Size = UDim2.new(0.24, 0, 0.6, 0)
+		clBtn.Position = UDim2.new(0.72, 0, 0.2, 0)
+		clBtn.BackgroundColor3 = Color3.fromRGB(45, 175, 75)
+		clBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+		clBtn.TextScaled = true
+		clBtn.Font = Enum.Font.GothamBold
+		clBtn.Text = "CLAIM 💎"
+		clBtn.ZIndex = 18
+		clBtn.Parent = mCard
+
+		local clc = Instance.new("UICorner")
+		clc.CornerRadius = UDim.new(0, 8)
+		clc.Parent = clBtn
+
+		clBtn.MouseButton1Click:Connect(function()
+			if UIController.Remotes.ClaimGrowthFund then
+				UIController.Remotes.ClaimGrowthFund:FireServer(tier.Chap)
+			end
+		end)
+	end
+
+	-- 4. CARNIVAL CONTAINER
+	local carnivalFrame = Instance.new("ScrollingFrame")
+	carnivalFrame.Name = "CarnivalFrame"
+	carnivalFrame.Size = UDim2.new(0.92, 0, 0.82, 0)
+	carnivalFrame.Position = UDim2.new(0.04, 0, 0, 92)
+	carnivalFrame.BackgroundTransparency = 1
+	carnivalFrame.BorderSizePixel = 0
+	carnivalFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+	carnivalFrame.Visible = false
+	carnivalFrame.ZIndex = 16
+	carnivalFrame.Parent = modal
+	UIController.Elements.EventCarnivalFrame = carnivalFrame
+
+	local cnLayout = Instance.new("UIListLayout")
+	cnLayout.Padding = UDim.new(0, 10)
+	cnLayout.Parent = carnivalFrame
+
+	for day = 1, 7 do
+		local cCard = Instance.new("Frame")
+		cCard.Size = UDim2.new(1, 0, 0, 68)
+		cCard.BackgroundColor3 = (day == 7) and Color3.fromRGB(44, 28, 48) or Color3.fromRGB(26, 30, 42)
+		cCard.ZIndex = 17
+		cCard.Parent = carnivalFrame
+
+		local ccCorn = Instance.new("UICorner")
+		ccCorn.CornerRadius = UDim.new(0, 10)
+		ccCorn.Parent = cCard
+
+		local ccStroke = Instance.new("UIStroke")
+		ccStroke.Color = (day == 7) and Color3.fromRGB(255, 215, 60) or Color3.fromRGB(60, 70, 90)
+		ccStroke.Thickness = 1.5
+		ccStroke.Parent = cCard
+
+		local dTitle = Instance.new("TextLabel")
+		dTitle.Size = UDim2.new(0.4, 0, 0.45, 0)
+		dTitle.Position = UDim2.new(0.04, 0, 0.12, 0)
+		dTitle.BackgroundTransparency = 1
+		dTitle.TextColor3 = (day == 7) and Color3.fromRGB(255, 220, 80) or Color3.fromRGB(255, 255, 255)
+		dTitle.TextScaled = true
+		dTitle.Font = Enum.Font.GothamBlack
+		dTitle.TextXAlignment = Enum.TextXAlignment.Left
+		dTitle.Text = string.format("DAY %d LOGIN REWARD", day)
+		dTitle.ZIndex = 18
+		dTitle.Parent = cCard
+
+		local dRew = Instance.new("TextLabel")
+		dRew.Size = UDim2.new(0.5, 0, 0.35, 0)
+		dRew.Position = UDim2.new(0.04, 0, 0.55, 0)
+		dRew.BackgroundTransparency = 1
+		dRew.TextColor3 = Color3.fromRGB(120, 240, 180)
+		dRew.TextScaled = true
+		dRew.Font = Enum.Font.GothamBold
+		dRew.TextXAlignment = Enum.TextXAlignment.Left
+		dRew.Text = (day == 7) and "🌟 5★ Legendary Hero Selector!" or string.format("+%d 💎, +%d Scrolls", day * 50, math.clamp(day, 1, 3))
+		dRew.ZIndex = 18
+		dRew.Parent = cCard
+	end
+
+	-- Subtab Click Handler
+	local function SwitchEventTab(tab: "Bundles" | "Vip" | "Fund" | "Carnival")
+		tabBundlesBtn.BackgroundColor3 = (tab == "Bundles") and Color3.fromRGB(200, 60, 120) or Color3.fromRGB(36, 40, 55)
+		tabVipBtn.BackgroundColor3 = (tab == "Vip") and Color3.fromRGB(200, 60, 120) or Color3.fromRGB(36, 40, 55)
+		tabFundBtn.BackgroundColor3 = (tab == "Fund") and Color3.fromRGB(200, 60, 120) or Color3.fromRGB(36, 40, 55)
+		tabCarnivalBtn.BackgroundColor3 = (tab == "Carnival") and Color3.fromRGB(200, 60, 120) or Color3.fromRGB(36, 40, 55)
+
+		scroll.Visible = (tab == "Bundles")
+		vipFrame.Visible = (tab == "Vip")
+		fundFrame.Visible = (tab == "Fund")
+		carnivalFrame.Visible = (tab == "Carnival")
+
+		UIController.RefreshEventsUI()
+	end
+
+	tabBundlesBtn.MouseButton1Click:Connect(function() SwitchEventTab("Bundles") end)
+	tabVipBtn.MouseButton1Click:Connect(function() SwitchEventTab("Vip") end)
+	tabFundBtn.MouseButton1Click:Connect(function() SwitchEventTab("Fund") end)
+	tabCarnivalBtn.MouseButton1Click:Connect(function() SwitchEventTab("Carnival") end)
 
 	UIController.RefreshEventsUI()
 end
@@ -2076,6 +2527,99 @@ function UIController.RefreshEventsUI()
 			baBtn.BackgroundColor3 = Color3.fromRGB(45, 120, 210)
 			baBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 			baBtn.Active = true
+		end
+	end
+
+	-- Monthly Card VIP Status
+	local vipStatusLbl = UIController.Elements.VipStatusLbl
+	local buyVipBtn = UIController.Elements.BuyVipBtn
+	local claimVipBtn = UIController.Elements.ClaimVipDailyBtn
+	local vipExpiry = UIController.State.MonthlyCardExpiry or 0
+	local isVipActive = vipExpiry > os.time()
+
+	if vipStatusLbl and buyVipBtn and claimVipBtn then
+		if isVipActive then
+			local daysLeft = math.ceil((vipExpiry - os.time()) / 86400)
+			vipStatusLbl.Text = string.format("Status: 👑 ACTIVE (%d Days Remaining) | +15%% AFK Boost", daysLeft)
+			vipStatusLbl.TextColor3 = Color3.fromRGB(255, 220, 90)
+			buyVipBtn.Text = "👑 RENEW (R$ 199)"
+			buyVipBtn.BackgroundColor3 = Color3.fromRGB(60, 50, 75)
+
+			local lastClaim = UIController.State.LastMonthlyCardClaim or 0
+			local isDailyClaimable = (os.time() - lastClaim) >= 86400
+			claimVipBtn.Active = isDailyClaimable
+			claimVipBtn.Text = isDailyClaimable and "🎁 CLAIM 100 💎 + 1 SCROLL" or "CLAIMED TODAY ✓"
+			claimVipBtn.BackgroundColor3 = isDailyClaimable and Color3.fromRGB(45, 175, 75) or Color3.fromRGB(45, 52, 60)
+		else
+			vipStatusLbl.Text = "Status: Inactive (Purchase to activate 30-day VIP)"
+			vipStatusLbl.TextColor3 = Color3.fromRGB(160, 170, 180)
+			buyVipBtn.Text = "👑 ACTIVATE (R$ 199)"
+			buyVipBtn.BackgroundColor3 = Color3.fromRGB(220, 150, 40)
+			claimVipBtn.Active = false
+			claimVipBtn.Text = "VIP INACTIVE"
+			claimVipBtn.BackgroundColor3 = Color3.fromRGB(45, 50, 60)
+		end
+	end
+
+	-- Growth Fund Status
+	local fundTitle = UIController.Elements.FundHeaderTitle
+	local unlockFundBtn = UIController.Elements.UnlockFundBtn
+	local fundFrame = UIController.Elements.EventFundFrame
+	local isFundUnlocked = UIController.State.GrowthFundPurchased
+	local fundClaimed = UIController.State.GrowthFundClaimed or {}
+	local highest = UIController.State.HighestClearedStage
+
+	if fundTitle and unlockFundBtn then
+		if isFundUnlocked then
+			fundTitle.Text = "📈 CHAPTER GROWTH FUND [UNLOCKED / ACTIVE ✓]"
+			fundTitle.TextColor3 = Color3.fromRGB(160, 240, 180)
+			unlockFundBtn.Text = "UNLOCKED ✓"
+			unlockFundBtn.BackgroundColor3 = Color3.fromRGB(45, 52, 60)
+			unlockFundBtn.TextColor3 = Color3.fromRGB(130, 180, 140)
+			unlockFundBtn.Active = false
+		else
+			fundTitle.Text = "📈 CHAPTER GROWTH FUND (UP TO 12,500 💎)"
+			fundTitle.TextColor3 = Color3.fromRGB(255, 220, 90)
+			unlockFundBtn.Text = "UNLOCK (R$ 249)"
+			unlockFundBtn.BackgroundColor3 = Color3.fromRGB(45, 140, 220)
+			unlockFundBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+			unlockFundBtn.Active = true
+		end
+	end
+
+	if fundFrame then
+		for chap = 1, 5 do
+			local card = fundFrame:FindFirstChild("FundTier_" .. chap) :: Frame?
+			if card then
+				local clBtn = card:FindFirstChild("ClaimFundBtn") :: TextButton?
+				if clBtn then
+					local reqStage = string.format("%d-10", chap)
+					local isStageCleared = StageData.IsMilestoneReached(highest, reqStage)
+					local isTierClaimed = fundClaimed[chap]
+
+					if isTierClaimed then
+						clBtn.Text = "CLAIMED ✓"
+						clBtn.BackgroundColor3 = Color3.fromRGB(40, 48, 55)
+						clBtn.TextColor3 = Color3.fromRGB(130, 180, 140)
+						clBtn.Active = false
+					elseif not isFundUnlocked then
+						clBtn.Text = "🔒 FUND LOCKED"
+						clBtn.BackgroundColor3 = Color3.fromRGB(45, 50, 60)
+						clBtn.TextColor3 = Color3.fromRGB(160, 165, 175)
+						clBtn.Active = false
+					elseif isStageCleared then
+						clBtn.Text = "CLAIM 💎"
+						clBtn.BackgroundColor3 = Color3.fromRGB(45, 175, 75)
+						clBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+						clBtn.Active = true
+					else
+						clBtn.Text = string.format("Clear %d-10 🔒", chap)
+						clBtn.BackgroundColor3 = Color3.fromRGB(45, 50, 60)
+						clBtn.TextColor3 = Color3.fromRGB(160, 165, 175)
+						clBtn.Active = false
+					end
+				end
+			end
 		end
 	end
 end

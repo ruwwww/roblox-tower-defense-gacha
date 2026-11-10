@@ -44,6 +44,10 @@ function IdleRewardService.Init(remotes: { [string]: RemoteEvent })
 	IdleRewardService.Remotes = remotes
 end
 
+function IdleRewardService.GetAfkRates(highestClearedStage: string): AfkRates
+	return GetAfkRates(highestClearedStage)
+end
+
 function IdleRewardService.CalculatePendingRewards(player: Player)
 	local prof = ProfileService.Get(player)
 	if not prof then
@@ -55,10 +59,14 @@ function IdleRewardService.CalculatePendingRewards(player: Player)
 	local elapsedMins = elapsedSec / 60
 
 	local rates = GetAfkRates(prof.HighestClearedStage)
+	local mult = 1.0
+	if prof.MonthlyCardExpiry and prof.MonthlyCardExpiry > now then
+		mult = 1.15 -- +15% Monthly Privilege Card VIP boost!
+	end
 
-	local goldEarned = math.floor(rates.GoldPerMin * elapsedMins)
-	local elixirEarned = math.floor(rates.ElixirPerMin * elapsedMins)
-	local expEarned = math.floor(rates.ExpPerMin * elapsedMins)
+	local goldEarned = math.floor(rates.GoldPerMin * elapsedMins * mult)
+	local elixirEarned = math.floor(rates.ElixirPerMin * elapsedMins * mult)
+	local expEarned = math.floor(rates.ExpPerMin * elapsedMins * mult)
 
 	-- Check for equipment drop chances (approx 1 drop chance per 15 minutes)
 	local possibleDrops = math.floor(elapsedMins / 15)

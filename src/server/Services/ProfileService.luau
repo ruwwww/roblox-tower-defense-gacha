@@ -1,6 +1,10 @@
 --!strict
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Shared = ReplicatedStorage:WaitForChild("Shared")
+local StageData = require(Shared:WaitForChild("Data"):WaitForChild("StageData"))
 
 export type HeroInstance = {
 	Uid: string,
@@ -58,6 +62,10 @@ export type PlayerProfile = {
 	DailyMissions: DailyMissionsData,
 	StarterPackPurchased: boolean,
 	EventOffersClaimed: { [string]: boolean },
+	MonthlyCardExpiry: number,
+	LastMonthlyCardClaim: number,
+	GrowthFundPurchased: boolean,
+	GrowthFundClaimed: { [number]: boolean },
 }
 
 local ProfileService = {
@@ -190,6 +198,10 @@ function ProfileService.SetupPlayer(player: Player)
 		},
 		StarterPackPurchased = false,
 		EventOffersClaimed = {},
+		MonthlyCardExpiry = 0,
+		LastMonthlyCardClaim = 0,
+		GrowthFundPurchased = false,
+		GrowthFundClaimed = {},
 	}
 
 	ProfileService.Profiles[player] = profile
@@ -474,6 +486,189 @@ function ProfileService.PurchaseEventOffer(player: Player, offerId: string)
 		if ProfileService.Remotes.NotifyMessage then
 			ProfileService.Remotes.NotifyMessage:FireClient(player, "🎁 Purchased Blacksmith Arsenal Pack: Dragon Spear + Knight Plate + 20k Elixir!", Color3.fromRGB(100, 255, 140))
 		end
+
+	elseif offerId == "time_warp" then
+		if prof.Diamonds < 250 then
+			if ProfileService.Remotes.NotifyMessage then
+				ProfileService.Remotes.NotifyMessage:FireClient(player, "Not enough Diamonds! Need 250 💎", Color3.fromRGB(255, 80, 80))
+			end
+			return
+		end
+
+		prof.Diamonds -= 250
+		-- Instant 240 mins (4 hours) AFK Loot calculation
+		local stageDef = StageData.Get(prof.HighestClearedStage)
+		local goldRate = stageDef and stageDef.AfkRates.GoldPerMin or 30
+		local elixirRate = stageDef and stageDef.AfkRates.ElixirPerMin or 20
+
+		local mult = (prof.MonthlyCardExpiry > os.time()) and 1.15 or 1.0
+		local goldGain = math.floor(goldRate * 240 * mult)
+		local elixirGain = math.floor(elixirRate * 240 * mult)
+
+		prof.Gold += goldGain
+		prof.Elixir += elixirGain
+
+		ProfileService.SyncProfile(player)
+		if ProfileService.Remotes.NotifyMessage then
+			ProfileService.Remotes.NotifyMessage:FireClient(player, string.format("⏳ 240m Time-Warp Used: +%d Gold, +%d Elixir!", goldGain, elixirGain), Color3.fromRGB(100, 255, 140))
+		end
+
+	elseif offerId == "shard_chest" then
+		if prof.Diamonds < 1200 then
+			if ProfileService.Remotes.NotifyMessage then
+				ProfileService.Remotes.NotifyMessage:FireClient(player, "Not enough Diamonds! Need 1,200 💎", Color3.fromRGB(255, 80, 80))
+			end
+			return
+		end
+
+		prof.Diamonds -= 1200
+		prof.Elixir += 50000
+
+		-- Award 2x 3★ duplicates for ascension
+		local u1 = HttpService:GenerateGUID(false)
+		local u2 = HttpService:GenerateGUID(false)
+		prof.Heroes[u1] = { Uid = u1, HeroId = "iron_garrison", Level = 1, Star = 3, Equipment = {} }
+		prof.Heroes[u2] = { Uid = u2, HeroId = "crimson_duelist", Level = 1, Star = 3, Equipment = {} }
+
+		ProfileService.SyncProfile(player)
+		if ProfileService.Remotes.NotifyMessage then
+			ProfileService.Remotes.NotifyMessage:FireClient(player, "⭐ Hero Awakening Chest opened: 2x 3★ Duplicates + 50,000 Elixir!", Color3.fromRGB(255, 215, 60))
+		end
+	end
+end
+
+function ProfileService.PurchaseMonthlyCard(player: Player)
+	local prof = ProfileService.Get(player)
+	if not prof then return end
+
+	local now = os.time()
+	local newExpiry = math.max(now, prof.MonthlyCardExpiry) + (30 * 86400)
+	prof.MonthlyCardExpiry = newExpiry
+	prof.LastMonthlyCardClaim = now
+
+	-- Send today's first daily supply to Mailbox
+	local mailId = HttpService:GenerateGUID(false)
+	local mail: MailItem = {
+		Id = mailId,
+		Title = "👑 Monthly Privilege Card: Daily Supply",
+		Content = "Commander, here is your daily VIP stipend of 100 Diamonds and 1x Elite Summon Scroll!",
+		Sender = "Royal Treasury",
+		Items = {
+			Diamonds = 100,
+			EliteScrolls = 1,
+		},
+		Claimed = false,
+		CreatedAt = now,
+	}
+	prof.Mailbox[mailId] = mail
+
+	ProfileService.SyncProfile(player)
+	if ProfileService.Remotes.NotifyMessage then
+		ProfileService.Remotes.NotifyMessage:FireClient(player, "👑 30-Day Monthly Privilege Card activated! +15% AFK Loot active. Check your Mailbox for today's supply!", Color3.fromRGB(255, 220, 80))
+	end
+end
+
+function ProfileService.ClaimMonthlyCardDaily(player: Player)
+	local prof = ProfileService.Get(player)
+	if not prof then return end
+
+	local now = os.time()
+	if prof.MonthlyCardExpiry <= now then
+		if ProfileService.Remotes.NotifyMessage then
+			ProfileService.Remotes.NotifyMessage:FireClient(player, "Monthly Privilege Card is not active or has expired!", Color3.fromRGB(255, 100, 100))
+		end
+		return
+	end
+
+	if (now - prof.LastMonthlyCardClaim) < 86400 and prof.LastMonthlyCardClaim > 0 then
+		if ProfileService.Remotes.NotifyMessage then
+			ProfileService.Remotes.NotifyMessage:FireClient(player, "Today's supply already claimed! Check back tomorrow.", Color3.fromRGB(255, 200, 60))
+		end
+		return
+	end
+
+	prof.LastMonthlyCardClaim = now
+	local mailId = HttpService:GenerateGUID(false)
+	local mail: MailItem = {
+		Id = mailId,
+		Title = "👑 Monthly Privilege Card: Daily Supply",
+		Content = "Commander, here is your daily VIP stipend: 100 Diamonds and 1x Elite Summon Scroll!",
+		Sender = "Royal Treasury",
+		Items = {
+			Diamonds = 100,
+			EliteScrolls = 1,
+		},
+		Claimed = false,
+		CreatedAt = now,
+	}
+	prof.Mailbox[mailId] = mail
+
+	ProfileService.SyncProfile(player)
+	if ProfileService.Remotes.NotifyMessage then
+		ProfileService.Remotes.NotifyMessage:FireClient(player, "👑 Daily VIP stipend sent to your Mailbox: 100 💎 + 1x Elite Scroll!", Color3.fromRGB(100, 255, 120))
+	end
+end
+
+function ProfileService.PurchaseGrowthFund(player: Player)
+	local prof = ProfileService.Get(player)
+	if not prof then return end
+
+	if prof.GrowthFundPurchased then
+		if ProfileService.Remotes.NotifyMessage then
+			ProfileService.Remotes.NotifyMessage:FireClient(player, "Chapter Growth Fund already unlocked!", Color3.fromRGB(255, 120, 120))
+		end
+		return
+	end
+
+	prof.GrowthFundPurchased = true
+	ProfileService.SyncProfile(player)
+	if ProfileService.Remotes.NotifyMessage then
+		ProfileService.Remotes.NotifyMessage:FireClient(player, "📈 Chapter Growth Fund unlocked! You can now claim up to 12,500 💎 Diamonds!", Color3.fromRGB(255, 215, 60))
+	end
+end
+
+function ProfileService.ClaimGrowthFund(player: Player, chapterNum: number)
+	local prof = ProfileService.Get(player)
+	if not prof then return end
+
+	if not prof.GrowthFundPurchased then
+		if ProfileService.Remotes.NotifyMessage then
+			ProfileService.Remotes.NotifyMessage:FireClient(player, "Please unlock the Growth Fund first!", Color3.fromRGB(255, 120, 120))
+		end
+		return
+	end
+
+	if prof.GrowthFundClaimed[chapterNum] then
+		if ProfileService.Remotes.NotifyMessage then
+			ProfileService.Remotes.NotifyMessage:FireClient(player, string.format("Chapter %d Growth Fund already claimed!", chapterNum), Color3.fromRGB(255, 200, 60))
+		end
+		return
+	end
+
+	local reqStage = string.format("%d-10", chapterNum)
+	local isCleared = StageData.IsMilestoneReached(prof.HighestClearedStage, reqStage)
+	if not isCleared then
+		if ProfileService.Remotes.NotifyMessage then
+			ProfileService.Remotes.NotifyMessage:FireClient(player, string.format("Defeat Chapter %d Boss (Stage %d-10) to claim this reward!", chapterNum, chapterNum), Color3.fromRGB(255, 100, 100))
+		end
+		return
+	end
+
+	local FUND_TIERS = {
+		[1] = 1500,
+		[2] = 2000,
+		[3] = 2500,
+		[4] = 3000,
+		[5] = 3500,
+	}
+
+	local diamondReward = FUND_TIERS[chapterNum] or 1500
+	prof.GrowthFundClaimed[chapterNum] = true
+	prof.Diamonds += diamondReward
+
+	ProfileService.SyncProfile(player)
+	if ProfileService.Remotes.NotifyMessage then
+		ProfileService.Remotes.NotifyMessage:FireClient(player, string.format("📈 Chapter %d Growth Fund Claimed: +%d 💎 Diamonds!", chapterNum, diamondReward), Color3.fromRGB(100, 255, 140))
 	end
 end
 
@@ -501,6 +696,10 @@ function ProfileService.SyncProfile(player: Player)
 		DailyMissions = prof.DailyMissions,
 		StarterPackPurchased = prof.StarterPackPurchased,
 		EventOffersClaimed = prof.EventOffersClaimed,
+		MonthlyCardExpiry = prof.MonthlyCardExpiry,
+		LastMonthlyCardClaim = prof.LastMonthlyCardClaim,
+		GrowthFundPurchased = prof.GrowthFundPurchased,
+		GrowthFundClaimed = prof.GrowthFundClaimed,
 	})
 end
 
