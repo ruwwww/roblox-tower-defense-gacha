@@ -118,6 +118,21 @@ Lobby adalah hub sosial multiplayer, sedangkan pertempuran bersifat **private so
 - Setiap serangan atau saat menahan damage menghasilkan +10 s.d. +15 Energy.
 - Saat bar mencapai 100, hero secara otomatis (atau manual jika mode auto mati) mengaktifkan **Ultimate Skill** dengan efek visual megah (misal: Meteor Storm, Fortress Shield, Divine Heal).
 
+### Sistem Star-Up / Ascension (Level Cap Checkpoint)
+Mirip dengan game *Idle Heroes*, *AFK Arena*, dan *Arknights (Elite Promotion)*, hero tidak bisa dinaikkan levelnya tanpa henti hanya dengan Elixir. Hero memiliki **Level Cap (Batas Level)** yang dikunci oleh jumlah Bintang (Star Tier).
+
+| Star Tier | Level Cap | Syarat Star-Up (Ascension Gate) | Bonus Saat Star-Up |
+| :---: | :---: | :--- | :--- |
+| **3★** | **Lv. 40** | Unit dasar / summon awal | Stat dasar |
+| **4★** | **Lv. 60** | 2x Duplikat 3★ + Gold | +20% All Stats, Buka **Passive Skill 1** |
+| **5★** | **Lv. 100** | 3x Hero 4★ + Star Stone + Elixir | +35% All Stats, Upgrade **Active Skill (Lv. 2)** |
+| **6★** | **Lv. 140** | 1x Duplikat 5★ Spesifik + 1x 5★ Sembarang | +50% All Stats, Buka **Passive Skill 2 (Aura/Special)** |
+| **7★ – 10★** | **Lv. 180 – 250** | Fodder 5★/6★ (Endgame Ascension) | Stat scaling eksponensial untuk kompetisi PvP/High Campaign |
+
+> [!IMPORTANT]
+> **Alur Leveling**:
+> Pemain menggunakan `Elixir + Gold` untuk naik dari Lv. 1 sampai Lv. 40. Begitu mencapai Lv. 40, tombol "Level Up" berubah menjadi **"Star Up / Ascend"**. Pemain harus melakukan Star-Up di Altar terlebih dahulu untuk membuka cap level berikutnya (Lv. 60), baru kemudian bisa menggunakan Elixir lagi. Hal ini memberi nilai tinggi pada duplikat gacha dan menjaga progres tetap bertahap.
+
 ### Equipment (4 Slot)
 - **Weapon**: Menambah Flat ATK & Crit Rate.
 - **Armor**: Menambah HP & Physical DEF.
@@ -131,8 +146,8 @@ Lobby adalah hub sosial multiplayer, sedangkan pertempuran bersifat **private so
 ## 5. Ekonomi & AFK Auto-Loot
 
 ### 4 Mata Uang Utama:
-1. **Gold**: Mata uang umum untuk upgrade gear dan biaya level up hero.
-2. **Elixir**: Esensi hero khusus untuk menaikkan level hero di Backpack.
+1. **Gold**: Mata uang umum untuk upgrade gear, biaya level up hero, dan biaya Star-Up.
+2. **Elixir**: Esensi hero khusus untuk menaikkan level hero di Backpack (sebelum mentok cap).
 3. **Diamond**: Mata uang premium (untuk summon, refresh shop, klaim AFK instan).
 4. **Heroic Scroll**: Tiket gacha ganjil/sepuluh hero.
 
@@ -145,15 +160,22 @@ Setiap interval 10 menit, ada probabilitas roll drop equipment sesuai tier stage
 
 ---
 
-## 6. Struktur Stage PvE & Monetisasi
+## 6. Struktur Stage PvE & Global Pacing
 
-- **Format Bab**: Tiap chapter terdiri dari 10 Stage (misal 1-1 s.d. 1-10).
-- **Pacing**:
-  - Stage 1–4: Musuh normal (pembiasaan formasi).
-  - Stage 5: Mini-Boss pertama (tes DPS & Blocker).
-  - Stage 6–9: Musuh berfitur khusus (armor tebal, musuh terbang yang kebal blocker land).
-  - Stage 10: Chapter Boss (memiliki skill serangan area ke hero tower).
-- **Monetisasi Robux Ramah Pemain**:
-  - **Fast AFK Claim (Quick Rewards)**: Dapatkan 120 menit hasil AFK seketika (1x gratis harian, berikutnya via Diamond/Robux).
-  - **Beginner Starter Pack**: 10x Heroic Scroll + Hero 5★ SSR Defender + 100.000 Elixir.
-  - **VIP Privilege Tier**: Menambah slot backpack, limit waktu AFK loot, dan diskon stamina.
+### Format Stage Chapter (Sederhana & Konsisten)
+Di dalam tiap bab/chapter (misal Chapter 1, Chapter 2, dst.), format stage dibuat seragam tanpa variasi pacing internal yang rumit:
+- **Stage 1 s.d. 4**: Pertempuran gameplay biasa (standard defense waves).
+- **Stage 5**: **Mini-Boss Stage** (memiliki musuh elit tangguh di akhir wave).
+- **Stage 6 s.d. 9**: Pertempuran gameplay biasa dengan sedikit peningkatan densitas musuh.
+- **Stage 10**: **Chapter Boss Stage** (menghadapi Boss Utama bab tersebut dengan drop jaminan Equipment & Star Stone).
+
+### Global Pacing (Bertahap & Tidak Terlalu Cepat)
+Pacing keseluruhan diatur secara makro agar pemain tidak tamat dalam beberapa jam:
+1. **Stat Wall & Level Cap Wall**: Kebutuhan Elixir meningkat secara geometris tiap 10 level, dan pemain akan terhenti di Level Cap (misal Lv. 40 atau Lv. 60) sampai mengumpulkan duplikat hero untuk Star-Up.
+2. **AFK Dependency**: Ketika pemain stuck di Stage 5 (Mini-Boss) atau Stage 10 (Boss), solusinya adalah menunggu akumulasi AFK Auto-Loot (Gold & Elixir) untuk memperkuat tim, atau farming gear di Blacksmith.
+3. **Player Retention**: Menghasilkan kepuasan jangka panjang khas game idle di mana pemain login setiap hari untuk klaim loot, Star-Up hero, dan menembus stage yang kemarin sempat stuck.
+
+### Monetisasi Robux Ramah Pemain:
+- **Fast AFK Claim (Quick Rewards)**: Dapatkan 120 menit hasil AFK seketika (1x gratis harian, berikutnya via Diamond/Robux).
+- **Beginner Starter Pack**: 10x Heroic Scroll + Hero 5★ SSR Defender + 100.000 Elixir.
+- **VIP Privilege Tier**: Menambah slot backpack, limit waktu AFK loot, dan bonus stamina.
